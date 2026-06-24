@@ -38,7 +38,9 @@ $database = new Database();
 $db = $database->getConnection();
 
 $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-$uri = str_replace('/server', '', $uri); // Handle cases where /server is in path
+$uri = preg_replace('#^/ams/server#', '', $uri); // Handle cases where /ams/server is in path
+$uri = preg_replace('#^/ams#', '', $uri);        // Handle cases where /ams is in path
+$uri = preg_replace('#^/server#', '', $uri);     // Handle cases where /server is in path
 $uri = explode('/', trim($uri, '/'));
 
 // Check for /api prefix
