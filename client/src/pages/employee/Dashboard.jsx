@@ -12,7 +12,6 @@ const EmployeeDashboard = () => {
     const [recentLeaves, setRecentLeaves] = useState([]);
     const [allAttendance, setAllAttendance] = useState([]);
     const [allLeaves, setAllLeaves] = useState([]);
-    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchAll = async () => {
@@ -24,14 +23,14 @@ const EmployeeDashboard = () => {
                 const leaves = leavesRes.data.data?.leaves || leavesRes.data.data || [];
                 setRecentLeaves(leaves.slice(0, 5));
                 setAllLeaves(leaves);
-                setAllAttendance(attsRes.data.data || []);
+                const att = attsRes.data.data || attsRes.data || [];
+                setAllAttendance(Array.isArray(att) ? att : []);
             } catch (err) { console.error('Dashboard fetch error:', err); }
-            finally { setLoading(false); }
         };
         fetchAll();
     }, []);
 
-    if (loading) return <div className="flex-center" style={{ height: 400 }}><LoadingSpinner /></div>;
+
 
     const statusColors = { pending_manager: 'badge-pending', pending_hr: 'badge-pending', approved: 'badge-approved', rejected: 'badge-rejected', cancelled: 'badge-cancelled' };
 

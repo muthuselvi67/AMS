@@ -8,7 +8,7 @@ const api = axios.create({
 export const getServerUrl = (path) => {
     if (!path) return path;
     if (path.startsWith('http') || path.startsWith('data:')) return path;
-    const base = import.meta.env.PROD ? '/ams/server' : 'http://localhost:8000';
+    const base = import.meta.env.PROD ? '/ams/server' : '';
     return `${base}${path.startsWith('/') ? path : '/' + path}`;
 };
 

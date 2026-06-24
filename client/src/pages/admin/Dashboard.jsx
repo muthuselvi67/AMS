@@ -17,7 +17,6 @@ const AdminDashboard = () => {
     const [allAttendance, setAllAttendance] = useState([]);
     const [allLeaves, setAllLeaves] = useState([]);
     const [appraisals, setAppraisals] = useState([]);
-    const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('Week'); // Week, Month, Year
 
     useEffect(() => {
@@ -30,18 +29,17 @@ const AdminDashboard = () => {
                 ]);
                 const leaves = leavesRes.data.data?.leaves || leavesRes.data.data || [];
                 setAllLeaves(leaves);
-                setAllAttendance(attsRes.data.data || []);
+                const att = attsRes.data.data || attsRes.data || [];
+                setAllAttendance(Array.isArray(att) ? att : []);
                 setAppraisals(appraisalsRes.data.data?.appraisals || []);
             } catch (err) {
                 console.error('Dashboard fetch error:', err);
-            } finally {
-                setLoading(false);
             }
         };
         fetchAll();
     }, []);
 
-    if (loading) return <div className="flex-center" style={{ height: 400 }}><LoadingSpinner /></div>;
+
 
     // Timezone-safe local today date string (YYYY-MM-DD)
     const localToday = new Date();

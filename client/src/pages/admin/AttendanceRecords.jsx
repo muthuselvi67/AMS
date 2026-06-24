@@ -350,8 +350,16 @@ const AttendanceRecords = () => {
                                                                         width: 44, height: 44, flexShrink: 0
                                                                     }}
                                                                 >
-                                                                    <img src={getServerUrl(r.checkIn.photo)} alt="Check-In Selfie"
-                                                                        style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                                    <img src={getServerUrl(r.checkIn.photo)} alt="Check-In"
+                                                                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                                                        onError={e => {
+                                                                            if (!e.target.dataset.error) {
+                                                                                e.target.dataset.error = "true";
+                                                                                e.target.style.display = 'none';
+                                                                                e.target.insertAdjacentHTML('afterend', '<div style="display:flex;align-items:center;justify-content:center;height:100%;background:#F3F4F6;color:#9CA3AF;font-size:10px">N/A</div>');
+                                                                            }
+                                                                        }}
+                                                                    />
                                                                 </button>
                                                             )}
                                                             {r.checkOut?.photo && (
@@ -374,8 +382,16 @@ const AttendanceRecords = () => {
                                                                         width: 44, height: 44, flexShrink: 0
                                                                     }}
                                                                 >
-                                                                    <img src={getServerUrl(r.checkOut.photo)} alt="Check-Out Selfie"
-                                                                        style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                                    <img src={getServerUrl(r.checkOut.photo)} alt="Check-Out"
+                                                                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                                                        onError={e => {
+                                                                            if (!e.target.dataset.error) {
+                                                                                e.target.dataset.error = "true";
+                                                                                e.target.style.display = 'none';
+                                                                                e.target.insertAdjacentHTML('afterend', '<div style="display:flex;align-items:center;justify-content:center;height:100%;background:#F3F4F6;color:#9CA3AF;font-size:10px">N/A</div>');
+                                                                            }
+                                                                        }}
+                                                                    />
                                                                 </button>
                                                             )}
                                                         </div>
@@ -517,6 +533,11 @@ const AttendanceRecords = () => {
                             position: 'relative',
                             borderRadius: 14,
                             overflow: 'hidden',
+                            minHeight: 240,
+                            background: '#F3F4F6',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
                             border: `3px solid ${selfieModal.type === 'Check-In' ? '#10B981' : '#EF4444'}`,
                             boxShadow: '0 4px 20px rgba(0,0,0,0.15)'
                         }}>
@@ -525,7 +546,16 @@ const AttendanceRecords = () => {
                                 alt={`${selfieModal.type} Selfie`}
                                 style={{
                                     width: '100%',
+                                    minHeight: 240,
+                                    objectFit: 'cover',
                                     display: 'block'
+                                }}
+                                onError={(e) => {
+                                    if (!e.target.dataset.error) {
+                                        e.target.dataset.error = "true";
+                                        e.target.style.display = 'none';
+                                        e.target.insertAdjacentHTML('afterend', '<div style="color: #9CA3AF; padding: 40px; text-align: center;">Photo not found on server<br/><small style="font-size: 10px;">(Check uploads folder)</small></div>');
+                                    }
                                 }}
                             />
                             {(selfieModal.latitude || selfieModal.longitude || selfieModal.address) && (

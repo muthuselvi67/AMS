@@ -48,15 +48,44 @@ const PanelTitle = ({ icon: Icon, children, style = {} }) => (
   </h3>
 );
 
+const buildForm = (emp) => ({
+  name: emp.name || '',
+  phone: emp.phone || '',
+  phoneSecondary: emp.phoneSecondary || '',
+  department: emp.department || '',
+  position: emp.position || '',
+  avatar: emp.avatar || null,
+  coverPhoto: emp.coverPhoto || null,
+  gradDegree: emp.gradDegree || '',
+  gradInstitution: emp.gradInstitution || '',
+  gradYear: emp.gradYear || '',
+  gradGpa: emp.gradGpa || '',
+  portfolioWebsite: emp.portfolioWebsite || '',
+  portfolioGithub: emp.portfolioGithub || '',
+  portfolioLinkedin: emp.portfolioLinkedin || '',
+  portfolioResume: emp.portfolioResume || '',
+  bloodGroup: emp.bloodGroup || '',
+  dateOfBirth: emp.dateOfBirth ? emp.dateOfBirth.slice(0, 10) : '',
+  employeeId: emp.employeeId || '',
+  joiningDate: emp.joiningDate ? emp.joiningDate.slice(0, 10) : '',
+  idCardPhoto: emp.idCardPhoto || null,
+  bankName: emp.bankName || '',
+  accountName: emp.accountName || '',
+  accountNumber: emp.accountNumber || '',
+  ifscCode: emp.ifscCode || '',
+  branchName: emp.branchName || ''
+});
+
 const Profile = () => {
   const { user, updateUser } = useAuth();
   const id = user?.id;
 
-  const [employee, setEmployee] = useState(null);
-  const [loading, setLoading] = useState(true);
+  // Seed employee & form immediately from cached user context — no flicker!
+  const [employee, setEmployee] = useState(() => user || null);
+  const [loading, setLoading] = useState(false);
 
   const [isEditing, setIsEditing] = useState(false);
-  const [form, setForm] = useState(null);
+  const [form, setForm] = useState(() => user ? buildForm(user) : null);
   const [saving, setSaving] = useState(false);
 
   const [attendance, setAttendance] = useState([]);
@@ -75,55 +104,36 @@ const Profile = () => {
   const [savingPw, setSavingPw] = useState(false);
 
   useEffect(() => {
-    if (!id) return;
-    const fetchProfileData = async () => {
+    if (!id) {
+      setLoading(false);
+      return;
+    }
+    // Fetch full profile + attendance + leaves + leaveTypes all in parallel
+    const fetchAll = async () => {
       try {
-        const { data } = await api.get(`/users/${id}`);
-        const emp = data.data || data;
+        const [userRes, attRes, leavesRes, ltRes] = await Promise.all([
+          api.get(`/users/${id}`),
+          api.get(`/attendance`, { params: { employeeId: id } }),
+          api.get(`/leaves`, { params: { employeeId: id } }),
+          api.get('/leave-types'),
+        ]);
+
+        const emp = userRes.data?.data || userRes.data;
         setEmployee(emp);
-        setForm({
-          name: emp.name || '',
-          phone: emp.phone || '',
-          phoneSecondary: emp.phoneSecondary || '',
-          department: emp.department || '',
-          position: emp.position || '',
-          avatar: emp.avatar || null,
-          coverPhoto: emp.coverPhoto || null,
-          gradDegree: emp.gradDegree || '',
-          gradInstitution: emp.gradInstitution || '',
-          gradYear: emp.gradYear || '',
-          gradGpa: emp.gradGpa || '',
-          portfolioWebsite: emp.portfolioWebsite || '',
-          portfolioGithub: emp.portfolioGithub || '',
-          portfolioLinkedin: emp.portfolioLinkedin || '',
-          portfolioResume: emp.portfolioResume || '',
-          bloodGroup: emp.bloodGroup || '',
-          dateOfBirth: emp.dateOfBirth ? emp.dateOfBirth.slice(0, 10) : '',
-          employeeId: emp.employeeId || '',
-          joiningDate: emp.joiningDate ? emp.joiningDate.slice(0, 10) : '',
-          idCardPhoto: emp.idCardPhoto || null,
-          bankName: emp.bankName || '',
-          accountName: emp.accountName || '',
-          accountNumber: emp.accountNumber || '',
-          ifscCode: emp.ifscCode || '',
-          branchName: emp.branchName || ''
-        });
+        setForm(buildForm(emp));
 
-        const attRes = await api.get(`/attendance`, { params: { employeeId: id } });
-        setAttendance(attRes.data?.data || attRes.data || []);
+        const rawAtt = attRes.data?.data || attRes.data || [];
+        setAttendance(Array.isArray(rawAtt) ? rawAtt : []);
 
-        const leavesRes = await api.get(`/leaves`, { params: { employeeId: id } });
-        setLeaves(leavesRes.data?.data?.leaves || leavesRes.data?.leaves || leavesRes.data?.data || leavesRes.data || []);
+        const rawLeaves = leavesRes.data?.data?.leaves || leavesRes.data?.leaves || leavesRes.data?.data || leavesRes.data || [];
+        setLeaves(Array.isArray(rawLeaves) ? rawLeaves : []);
 
-        const ltRes = await api.get('/leave-types');
         setLeaveTypes(ltRes.data?.data || []);
       } catch (err) {
-        toast.error('Failed to load profile details');
-      } finally {
-        setLoading(false);
+        // Silently ignore — we already have cached data shown
       }
     };
-    fetchProfileData();
+    fetchAll();
   }, [id]);
 
   const handleChange = (e) => setForm(f => ({ ...f, [e.target.name]: e.target.value }));
@@ -210,13 +220,13 @@ const Profile = () => {
     }
   };
 
-  if (loading) return (
-    <div style={{ height: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <LoadingSpinner />
+
+  if (!employee) return (
+    <div style={{ height: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
+      Profile data not found. Please log out and log back in.
     </div>
   );
 
-  if (!employee) return null;
 
   const initials = (name) => name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || '?';
   const displayAvatar = isEditing ? form.avatar : employee.avatar;

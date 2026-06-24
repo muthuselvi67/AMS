@@ -6,7 +6,15 @@ const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(() => {
-        try { return JSON.parse(localStorage.getItem('lms_user')); } catch { return null; }
+        try { 
+            let parsed = JSON.parse(localStorage.getItem('lms_user')); 
+            // Fix for old nested data bug
+            if (parsed && parsed.data && parsed.status !== undefined) {
+                parsed = parsed.data;
+                localStorage.setItem('lms_user', JSON.stringify(parsed));
+            }
+            return parsed;
+        } catch { return null; }
     });
     const [token, setToken] = useState(() => localStorage.getItem('lms_token'));
     const [loading, setLoading] = useState(false);

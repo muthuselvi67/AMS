@@ -15,7 +15,6 @@ const HRDashboard = () => {
     const { user } = useAuth();
     const [allAttendance, setAllAttendance] = useState([]);
     const [allLeaves, setAllLeaves] = useState([]);
-    const [loading, setLoading] = useState(true);
     const [attendanceRange, setAttendanceRange] = useState('Week'); // Week | Month | Year
 
     useEffect(() => {
@@ -27,14 +26,14 @@ const HRDashboard = () => {
                 ]);
                 const leaves = leavesRes.data.data?.leaves || leavesRes.data.data || [];
                 setAllLeaves(leaves);
-                setAllAttendance(attsRes.data.data || []);
+                const att = attsRes.data.data || attsRes.data || [];
+                setAllAttendance(Array.isArray(att) ? att : []);
             } catch (err) { console.error('Dashboard fetch error:', err); }
-            finally { setLoading(false); }
         };
         fetchAll();
     }, []);
 
-    if (loading) return <div className="flex-center" style={{ height: 400 }}><LoadingSpinner /></div>;
+
 
 
     // Today string
