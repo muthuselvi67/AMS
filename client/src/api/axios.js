@@ -5,6 +5,13 @@ const api = axios.create({
     headers: { 'Content-Type': 'application/json' }
 });
 
+export const getServerUrl = (path) => {
+    if (!path) return path;
+    if (path.startsWith('http') || path.startsWith('data:')) return path;
+    const base = import.meta.env.PROD ? '/ams/server' : 'http://localhost:8000';
+    return `${base}${path.startsWith('/') ? path : '/' + path}`;
+};
+
 // Request interceptor: attach stored token
 api.interceptors.request.use(config => {
     const token = localStorage.getItem('lms_token');

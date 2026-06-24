@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import api from '../../api/axios';
+import api, { getServerUrl } from '../../api/axios';
 import toast from 'react-hot-toast';
 import { Briefcase, Calendar, Edit, Save, X, GraduationCap, Globe, Github, Linkedin, FileText, BarChart2, Clock, TrendingUp, Award, Lock, User } from 'lucide-react';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid, PieChart as RechartsPieChart, Pie, Cell, Legend } from 'recharts';
@@ -804,9 +804,10 @@ const Profile = () => {
               return (
                 <div style={{
                   height: 110,
-                  background: displayCover
-                    ? `url(${displayCover}) center/cover no-repeat`
-                    : 'linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%)',
+                  backgroundImage: displayCover ? `url(${getServerUrl(displayCover)})` : 'none',
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                  background: !displayCover ? 'linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%)' : undefined,
                   position: 'relative',
                   overflow: 'hidden',
                 }}>
@@ -847,7 +848,7 @@ const Profile = () => {
               {/* Avatar */}
               <div style={{ position: 'relative', display: 'inline-block', marginTop: -50 }}>
                 {displayAvatar ? (
-                  <img src={displayAvatar} alt={displayName}
+                  <img src={getServerUrl(displayAvatar)} alt={displayName}
                     style={{ width: 100, height: 100, borderRadius: '50%', objectFit: 'cover', border: '5px solid var(--bg-card)', display: 'block', boxShadow: 'var(--shadow-md)' }} />
                 ) : (
                   <div style={{ width: 100, height: 100, borderRadius: '50%', background: 'linear-gradient(135deg, var(--primary), var(--secondary))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2.5rem', fontWeight: 800, color: 'white', border: '5px solid var(--bg-card)', boxShadow: 'var(--shadow-md)' }}>
@@ -922,12 +923,12 @@ const Profile = () => {
               <div style={{ position: 'relative', display: 'inline-block', width: 90, height: 90, marginBottom: 12 }}>
                 {(employee.idCardPhoto || form?.idCardPhoto) ? (
                   <img
-                    src={isEditing ? (form?.idCardPhoto || employee.idCardPhoto) : employee.idCardPhoto}
+                    src={getServerUrl(isEditing ? (form?.idCardPhoto || employee.idCardPhoto) : employee.idCardPhoto)}
                     alt={employee.name}
                     style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover', border: '3px solid var(--primary)', padding: 2, background: 'white', display: 'block', boxShadow: 'var(--shadow-sm)' }}
                   />
                 ) : employee.avatar ? (
-                  <img src={employee.avatar} alt={employee.name} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover', border: '3px solid var(--primary)', padding: 2, background: 'white', display: 'block', boxShadow: 'var(--shadow-sm)' }} />
+                  <img src={getServerUrl(employee.avatar)} alt={employee.name} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover', border: '3px solid var(--primary)', padding: 2, background: 'white', display: 'block', boxShadow: 'var(--shadow-sm)' }} />
                 ) : (
                   <div style={{ width: '100%', height: '100%', borderRadius: '50%', background: 'linear-gradient(135deg, var(--primary), var(--secondary))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', fontWeight: 800, color: 'white', border: '3px solid var(--primary)', padding: 2, boxSizing: 'border-box' }}>
                     {initials(employee.name)}

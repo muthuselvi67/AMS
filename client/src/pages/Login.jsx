@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 import { Eye, EyeOff, LogIn } from 'lucide-react';
-import logo from '../assets/logo.svg';
+import logo from '../assets/logo.png';
 
 const Login = () => {
     const { login, loading } = useAuth();

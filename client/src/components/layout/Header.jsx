@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Bell, Menu, LogOut, User, Settings, Lock, X, ShieldCheck, ChevronLeft, Sun, Moon, Clock, Calendar, CheckCircle, XCircle, Briefcase, Cake } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import api from '../../api/axios';
+import api, { getServerUrl } from '../../api/axios';
 import toast from 'react-hot-toast';
 
 const pageTitles = {
@@ -294,11 +294,7 @@ const Header = ({ onMenuClick }) => {
                         )}
 
                         {notifDropdownOpen && (
-                            <div className="profile-dropdown-menu" style={{ 
-                                width: '380px', right: -10, padding: 0, overflow: 'hidden', borderRadius: '24px', 
-                                boxShadow: '0 20px 40px rgba(0,0,0,0.15)', border: '1px solid var(--border-light)', 
-                                transformOrigin: 'top right', animation: 'fadeInDown 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
-                            }}>
+                            <div className="profile-dropdown-menu notif-dropdown">
                                 <div style={{ 
                                     padding: '18px 24px', borderBottom: '1px solid rgba(0,0,0,0.05)', 
                                     display: 'flex', justifyContent: 'space-between', alignItems: 'center', 
@@ -407,7 +403,7 @@ const Header = ({ onMenuClick }) => {
                     <div style={{ position: 'relative' }}>
                         <button className="user-avatar-btn" onClick={() => setDropdownOpen(!dropdownOpen)} style={{ border: 'none', background: 'transparent', cursor: 'pointer' }}>
                             {user?.avatar ? (
-                                <img src={user.avatar} alt="Avatar" className="user-avatar" style={{ objectFit: 'cover' }} />
+                                <img src={getServerUrl(user.avatar)} alt="Avatar" className="user-avatar" style={{ objectFit: 'cover' }} />
                             ) : (
                                 <div className="user-avatar">{initials}</div>
                             )}
@@ -430,7 +426,7 @@ const Header = ({ onMenuClick }) => {
                             <div className="profile-dropdown-menu">
                                 <div className="dropdown-user-header">
                                     {user?.avatar ? (
-                                        <img src={user.avatar} alt="Avatar" className="dropdown-user-avatar" style={{ objectFit: 'cover' }} />
+                                        <img src={getServerUrl(user.avatar)} alt="Avatar" className="dropdown-user-avatar" style={{ objectFit: 'cover' }} />
                                     ) : (
                                         <div className="dropdown-user-avatar">{initials}</div>
                                     )}
@@ -495,7 +491,7 @@ const Header = ({ onMenuClick }) => {
                                     {isEditingProfile ? (
                                         profileAvatar ? <img src={profileAvatar} alt="Avatar" className="profile-large-avatar" style={{ objectFit: 'cover' }} /> : <div className="profile-large-avatar">{initials}</div>
                                     ) : (
-                                        user?.avatar ? <img src={user.avatar} alt="Avatar" className="profile-large-avatar" style={{ objectFit: 'cover' }} /> : <div className="profile-large-avatar">{initials}</div>
+                                        user?.avatar ? <img src={getServerUrl(user.avatar)} alt="Avatar" className="profile-large-avatar" style={{ objectFit: 'cover' }} /> : <div className="profile-large-avatar">{initials}</div>
                                     )}
                                     {isEditingProfile && (
                                         <label style={{

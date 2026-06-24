@@ -22,8 +22,8 @@ const ChatBox = () => {
 
     const messagesEndRef = useRef(null);
 
-    // Hide chat box on login page
-    const showChatWidget = isAuthenticated && user && location.pathname !== '/login';
+    // Hide chat box on login page and full chat pages
+    const showChatWidget = isAuthenticated && user && location.pathname !== '/login' && !location.pathname.includes('/chat');
 
     // Fetch user list
     const fetchUsers = async (showLoader = false) => {

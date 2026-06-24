@@ -1,0 +1,14 @@
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /ams/
+
+  # If the request is for the server API, do not rewrite it here (let server/.htaccess handle it)
+  RewriteCond %{REQUEST_URI} ^/ams/server/ [NC]
+  RewriteRule ^ - [L]
+
+  # For all other requests, if it's not a real file or directory, redirect to index.html
+  RewriteRule ^index\.html$ - [L]
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule . /ams/index.html [L]
+</IfModule>

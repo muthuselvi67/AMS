@@ -348,7 +348,7 @@ export default function DashboardCalendar() {
             <div style={{ background: 'var(--bg-white)', borderRadius: 12, border: '1px solid var(--border)', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
 
                 {/* ── Header ── */}
-                <div className="calendar-header" style={headerStyle}>
+                <div className="calendar-header" style={{ ...headerStyle, flexWrap: 'wrap', justifyContent: 'space-between' }}>
                     {/* Left: Today + nav + month title */}
                     <div className="calendar-header-left" style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1 }}>
                         <button
@@ -447,11 +447,13 @@ export default function DashboardCalendar() {
                 </div>
 
                 {/* ── Day-name column headers ── */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', borderBottom: '1px solid var(--border)' }}>
-                    {DAY_FULL.map((d, idx) => (
-                        <div key={d} style={dayHeaderStyle(idx)}>{d}</div>
-                    ))}
-                </div>
+                <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+                    <div style={{ minWidth: 768 }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', borderBottom: '1px solid var(--border)' }}>
+                            {DAY_FULL.map((d, idx) => (
+                                <div key={d} style={dayHeaderStyle(idx)}>{d}</div>
+                            ))}
+                        </div>
 
                 {/* ── Month grid ── */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)' }}>
@@ -564,6 +566,8 @@ export default function DashboardCalendar() {
                         </div>
                     ))}
                 </div>
+            </div>
+        </div>
 
                 {/* ── Legend ── */}
                 <div className="calendar-legend" style={{

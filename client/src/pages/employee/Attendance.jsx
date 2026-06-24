@@ -1,10 +1,10 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import api from '../../api/axios';
+import api, { getServerUrl } from '../../api/axios';
 import toast from 'react-hot-toast';
 import {
     MapPin, LogIn, LogOut, AlertCircle, RefreshCw,
     CheckCircle2, Navigation, Home, Send, Clock,
-    FileText, ChevronRight, Info, Loader
+    FileText, ChevronRight, Info, Loader, Camera, X
 } from 'lucide-react';
 
 /* ─────────────────────────────────────────
@@ -710,7 +710,7 @@ const Attendance = () => {
                                                                     width: 32, height: 32, flexShrink: 0
                                                                 }}
                                                             >
-                                                                <img src={h.checkIn.photo} alt="Check-In Selfie"
+                                                                <img src={getServerUrl(h.checkIn.photo)} alt="Check-In Selfie"
                                                                     style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                                             </button>
                                                         )}
@@ -733,7 +733,7 @@ const Attendance = () => {
                                                                     width: 32, height: 32, flexShrink: 0
                                                                 }}
                                                             >
-                                                                <img src={h.checkOut.photo} alt="Check-Out Selfie"
+                                                                <img src={getServerUrl(h.checkOut.photo)} alt="Check-Out Selfie"
                                                                     style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                                             </button>
                                                         )}
@@ -974,7 +974,7 @@ const Attendance = () => {
                             boxShadow: '0 4px 16px rgba(0,0,0,0.15)'
                         }}>
                             <img
-                                src={selfieViewModal.src}
+                                src={getServerUrl(selfieViewModal.src)}
                                 alt={`${selfieViewModal.type} Selfie`}
                                 style={{
                                     width: '100%',

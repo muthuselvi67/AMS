@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { Search, MapPin, Clock, Home, Calendar } from 'lucide-react';
-import api from '../../api/axios';
+import api, { getServerUrl } from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
 
@@ -350,7 +350,7 @@ const AttendanceRecords = () => {
                                                                         width: 44, height: 44, flexShrink: 0
                                                                     }}
                                                                 >
-                                                                    <img src={r.checkIn.photo} alt="Check-In Selfie"
+                                                                    <img src={getServerUrl(r.checkIn.photo)} alt="Check-In Selfie"
                                                                         style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                                                 </button>
                                                             )}
@@ -374,7 +374,7 @@ const AttendanceRecords = () => {
                                                                         width: 44, height: 44, flexShrink: 0
                                                                     }}
                                                                 >
-                                                                    <img src={r.checkOut.photo} alt="Check-Out Selfie"
+                                                                    <img src={getServerUrl(r.checkOut.photo)} alt="Check-Out Selfie"
                                                                         style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                                                 </button>
                                                             )}
@@ -521,7 +521,7 @@ const AttendanceRecords = () => {
                             boxShadow: '0 4px 20px rgba(0,0,0,0.15)'
                         }}>
                             <img
-                                src={selfieModal.src}
+                                src={getServerUrl(selfieModal.src)}
                                 alt={`${selfieModal.type} Selfie`}
                                 style={{
                                     width: '100%',
@@ -577,7 +577,7 @@ const AttendanceRecords = () => {
                             )}
                         </div>
                         <a
-                            href={selfieModal.src}
+                            href={getServerUrl(selfieModal.src)}
                             download={`selfie_${selfieModal.name}_${selfieModal.type}.jpg`}
                             style={{
                                 display: 'inline-block', marginTop: 14, padding: '10px 24px',
