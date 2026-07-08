@@ -256,16 +256,16 @@ const STATUS_LABELS = {
                     </div>
                 </div>
             )}
-            <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
                 <div>
-                    <h1>Allowance Reports & Audits</h1>
-                    <p>Audit employee claims and export monthly usage reports</p>
+                    <h1 style={{ margin: 0, marginBottom: '4px' }}>Allowance Reports & Audits</h1>
+                    <p style={{ margin: 0 }}>Audit employee claims and export monthly usage reports</p>
                 </div>
-                <div style={{ display: 'flex', gap: 12 }}>
-                    <button className="btn btn-primary" onClick={() => navigate(reviewPath)} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                    <button className="btn btn-primary" onClick={() => navigate(reviewPath)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, flex: 1 }}>
                         <ClipboardCheck size={18} /> Review Pending Requests
                     </button>
-                    <button className="btn btn-success" onClick={handleExport} disabled={exporting} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <button className="btn btn-success" onClick={handleExport} disabled={exporting} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, flex: 1 }}>
                         {exporting ? 'Generating...' : <><Download size={18} /> Export Excel/CSV</>}
                     </button>
                 </div>

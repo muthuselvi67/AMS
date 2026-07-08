@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Calendar, Home, BarChart2 } from 'lucide-react';
+import { Calendar, Home, BarChart2, Users, CheckCircle, CalendarDays, Briefcase } from 'lucide-react';
 import api from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
@@ -15,19 +15,22 @@ const HRDashboard = () => {
     const { user } = useAuth();
     const [allAttendance, setAllAttendance] = useState([]);
     const [allLeaves, setAllLeaves] = useState([]);
+    const [users, setUsers] = useState([]);
     const [attendanceRange, setAttendanceRange] = useState('Week'); // Week | Month | Year
 
     useEffect(() => {
         const fetchAll = async () => {
             try {
-                const [leavesRes, attsRes] = await Promise.all([
+                const [leavesRes, attsRes, usersRes] = await Promise.all([
                     api.get('/leaves'),
-                    api.get('/attendance')
+                    api.get('/attendance'),
+                    api.get('/users')
                 ]);
                 const leaves = leavesRes.data.data?.leaves || leavesRes.data.data || [];
                 setAllLeaves(leaves);
                 const att = attsRes.data.data || attsRes.data || [];
                 setAllAttendance(Array.isArray(att) ? att : []);
+                setUsers(usersRes.data.data || []);
             } catch (err) { console.error('Dashboard fetch error:', err); }
         };
         fetchAll();
@@ -162,12 +165,41 @@ const HRDashboard = () => {
         fontSize: 12,
     };
 
+    const totalEmployees = users.length;
+    const presentCount = presentToday.length;
+    const presentPercentage = totalEmployees > 0 ? ((presentCount / totalEmployees) * 100).toFixed(2) : 0;
+    const pendingLeaves = allLeaves.filter(l => l.status?.startsWith('pending')).length;
+    const activeDepartments = new Set(users.map(u => u.department).filter(Boolean)).size;
+
     return (
         <div className="fade-in">
-            {/* Page header */}
-            <div className="page-header" style={{ marginBottom: 24 }}>
-                <h1>Welcome, {user?.name?.split(' ')[0]}!</h1>
-                <p>Here's your leave and attendance overview</p>
+
+            {/* Welcome Banner */}
+            <div className="hr-welcome-banner" style={{ flexWrap: 'wrap', gap: '20px' }}>
+                <div style={{ zIndex: 1, flex: '1 1 250px' }}>
+                    <h1 style={{ whiteSpace: 'nowrap' }}>
+                        <span style={{ fontSize: '32px' }}>👋</span> Welcome, {user?.name?.split(' ')[0]}!
+                    </h1>
+                    <p>Here's your leave and attendance overview.</p>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'flex-end', gap: '16px', opacity: 0.9, marginTop: '-24px', marginBottom: '-24px', zIndex: 0, flexShrink: 0, marginLeft: 'auto' }}>
+                    {/* Plant SVG */}
+                    <svg width="60" height="80" viewBox="0 0 40 60" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ marginBottom: '10px' }}>
+                        <path d="M20 60C20 60 10 40 10 30C10 20 20 10 20 10C20 10 30 20 30 30C30 40 20 60 20 60Z" fill="#10B981"/>
+                        <path d="M20 60C20 60 5 45 5 35C5 25 10 15 10 15C10 15 25 25 25 35C25 45 20 60 20 60Z" fill="#34D399"/>
+                        <path d="M20 60C20 60 35 45 35 35C35 25 30 15 30 15C30 15 15 25 15 35C15 45 20 60 20 60Z" fill="#059669"/>
+                        <rect x="15" y="50" width="10" height="10" rx="2" fill="#FBBF24"/>
+                    </svg>
+                    {/* Monitor SVG */}
+                    <svg width="140" height="100" viewBox="0 0 100 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="5" y="10" width="90" height="55" rx="4" fill="#8B5CF6"/>
+                        <rect x="10" y="15" width="80" height="45" fill="#4C1D95"/>
+                        <path d="M40 65L35 80H65L60 65H40Z" fill="#A78BFA"/>
+                        <rect x="30" y="75" width="40" height="5" rx="2" fill="#C4B5FD"/>
+                        <circle cx="90" cy="75" r="5" fill="#8B5CF6"/>
+                        <path d="M92 73V70H96V75H92Z" fill="#A78BFA"/>
+                    </svg>
+                </div>
             </div>
 
             {/* Calendar */}
@@ -176,10 +208,10 @@ const HRDashboard = () => {
             </div>
 
             {/* ── TOP ROW: Today's Overview  +  Attendance Overview Chart ── */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.4fr', gap: 24, marginBottom: 24 }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24, marginBottom: 24 }}>
 
                 {/* Today's Overview */}
-                <div className="card" style={{ display: 'flex', flexDirection: 'column' }}>
+                <div className="card" style={{ flex: '1 1 300px', display: 'flex', flexDirection: 'column', minWidth: 0 }}>
                     <div className="card-header" style={{ borderBottom: '1px solid var(--border-light)', paddingBottom: 12, marginBottom: 16 }}>
                         <div className="card-title" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                             <Calendar size={17} /> Today's Overview
@@ -260,7 +292,7 @@ const HRDashboard = () => {
                 </div>
 
                 {/* Attendance Overview Chart */}
-                <div className="card" style={{ display: 'flex', flexDirection: 'column' }}>
+                <div className="card" style={{ flex: '1.4 1 300px', display: 'flex', flexDirection: 'column', minWidth: 0 }}>
                     <div className="card-header" style={{ borderBottom: '1px solid var(--border-light)', paddingBottom: 12, marginBottom: 16 }}>
                         <div className="card-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                             <BarChart2 size={17} style={{ color: 'var(--primary)' }} />
@@ -313,10 +345,10 @@ const HRDashboard = () => {
             </div>
 
             {/* ── SECOND ROW: Leave Status Donut  +  Monthly Leave Trends ── */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.6fr', gap: 24, marginBottom: 24 }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24, marginBottom: 24 }}>
 
                 {/* Donut — Leave Status */}
-                <div className="card" style={{ padding: '24px' }}>
+                <div className="card" style={{ flex: '1 1 300px', padding: '24px', minWidth: 0 }}>
                     <div className="card-header" style={{ marginBottom: 12 }}>
                         <div className="card-title">Leave Status Distribution</div>
                         <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>All time</span>
@@ -343,7 +375,7 @@ const HRDashboard = () => {
                 </div>
 
                 {/* Bar — Monthly Leave Trends */}
-                <div className="card" style={{ padding: '24px' }}>
+                <div className="card" style={{ flex: '1.6 1 300px', padding: '24px', minWidth: 0 }}>
                     <div className="card-header" style={{ marginBottom: 12 }}>
                         <div className="card-title">Monthly Leave Trends</div>
                         <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Last 6 months</span>

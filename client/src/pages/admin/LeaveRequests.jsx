@@ -109,7 +109,7 @@ const LeaveRequests = () => {
                 </div>
             </div>
 
-            <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', flexWrap: 'wrap' }}>
+            <div className="filter-chips">
                 {filters.map(f => {
                     const meta = STATUS_META[f] || { label: f, color: 'var(--text-secondary)', rgba: 'rgba(0,0,0,0.05)' };
                     const isActive = filter === f;

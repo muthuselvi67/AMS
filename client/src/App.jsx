@@ -24,7 +24,7 @@ const PayrollAdmin = lazy(() => import('./pages/admin/PayrollDashboard'));
 const AdminNotifications = lazy(() => import('./pages/admin/Notifications'));
 const AdminAssets = lazy(() => import('./pages/admin/Assets'));
 const AdminAnnouncements = lazy(() => import('./pages/admin/Announcements'));
-
+const AdminMeetingSchedule = lazy(() => import('./pages/admin/MeetingSchedule'));
 // HR Pages
 const HRDashboard = lazy(() => import('./pages/hr/Dashboard'));
 const HREmployees = lazy(() => import('./pages/hr/Employees'));
@@ -49,6 +49,10 @@ const AllowanceHistory = lazy(() => import('./pages/employee/AllowanceHistory'))
 const ReviewAllowances = lazy(() => import('./pages/pm/ReviewAllowances'));
 const ManageAllowancePolicies = lazy(() => import('./pages/hr/ManageAllowancePolicies'));
 const AllowanceReports = lazy(() => import('./pages/hr/AllowanceReports'));
+
+// Banking System (Standalone)
+const BankingLayout = lazy(() => import('./components/layout/BankingLayout'));
+const BankingDashboard = lazy(() => import('./pages/banking/BankingDashboard'));
 
 // Employee Pages
 const EmployeeDashboard = lazy(() => import('./pages/employee/Dashboard'));
@@ -116,12 +120,14 @@ function App() {
                                 <Route path="/admin/leave-requests" element={<LeaveRequests />} />
                                 <Route path="/admin/leave-types" element={<LeaveTypes />} />
                                 <Route path="/admin/attendance" element={<AttendanceRecords />} />
+                                <Route path="/admin/my-attendance" element={<Attendance />} />
                                 <Route path="/admin/holidays" element={<Holidays />} />
                                 <Route path="/admin/reports" element={<Reports />} />
                                 <Route path="/admin/payroll" element={<PayrollAdmin />} />
                                 <Route path="/admin/notifications" element={<AdminNotifications />} />
                                 <Route path="/admin/assets" element={<AdminAssets />} />
                                 <Route path="/admin/announcements" element={<AdminAnnouncements />} />
+                                <Route path="/admin/meetings/schedule" element={<AdminMeetingSchedule />} />
                                 <Route path="/admin/chat" element={<Chat />} />
                                 <Route path="/admin/allowance-policies" element={<ManageAllowancePolicies />} />
                                 <Route path="/admin/allowance-reports" element={<AllowanceReports />} />
@@ -141,6 +147,7 @@ function App() {
                                 <Route path="/hr/leave-requests" element={<HRLeaveRequests />} />
                                 <Route path="/hr/leave-types" element={<HRLeaveTypes />} />
                                 <Route path="/hr/attendance" element={<HRAttendanceRecords />} />
+                                <Route path="/hr/my-attendance" element={<Attendance />} />
                                 <Route path="/hr/holidays" element={<HRHolidays />} />
                                 <Route path="/hr/reports" element={<HRReports />} />
                                 <Route path="/hr/payroll" element={<HRPayroll />} />
@@ -150,6 +157,7 @@ function App() {
                                 <Route path="/hr/assets" element={<HRAssets />} />
                                 <Route path="/hr/documents" element={<HRDocuments />} />
                                 <Route path="/hr/announcements" element={<HRAnnouncements />} />
+                                <Route path="/hr/meetings/schedule" element={<AdminMeetingSchedule />} />
                                 <Route path="/hr/chat" element={<Chat />} />
                                 <Route path="/hr/helpdesk" element={<HRHelpDesk />} />
                                 <Route path="/hr/lifecycle" element={<HROnboarding />} />
@@ -157,6 +165,12 @@ function App() {
                                 <Route path="/hr/allowance-reports" element={<AllowanceReports />} />
                                 <Route path="/hr/allowance-review" element={<ReviewAllowances />} />
                                 <Route path="/hr/wfh-policy" element={<WFHPolicyManager />} />
+                            </Route>
+                        </Route>
+                        {/* Banking Standalone Route */}
+                        <Route element={<ProtectedRoute allowedRoles={['admin', 'hr', 'employee', 'developer']} />}>
+                            <Route element={<BankingLayout />}>
+                                <Route path="/banking-dashboard" element={<BankingDashboard />} />
                             </Route>
                         </Route>
 
@@ -182,6 +196,7 @@ function App() {
                                 <Route path="/employee/wfh-policy" element={<WFHPolicy />} />
                                 <Route path="/employee/assigned-tasks" element={<AssignedTasks />} />
                                 <Route path="/employee/chat" element={<Chat />} />
+                                <Route path="/employee/meetings/schedule" element={<AdminMeetingSchedule />} />
                             </Route>
                         </Route>
 
@@ -189,6 +204,7 @@ function App() {
                         <Route element={<ProtectedRoute allowedRoles={['pm', 'admin', 'developer']} />}>
                             <Route element={<AppLayout />}>
                                 <Route path="/pm/dashboard" element={<PMDashboard />} />
+                                <Route path="/pm/my-attendance" element={<Attendance />} />
                                 <Route path="/pm/projects" element={<PMProjects />} />
                                 <Route path="/pm/tasks" element={<PMTasks />} />
                                 <Route path="/pm/timesheets" element={<PMTimesheets />} />

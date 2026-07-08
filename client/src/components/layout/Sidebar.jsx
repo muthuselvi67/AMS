@@ -20,6 +20,11 @@ const adminLinks = [
         ]
     },
     {
+        section: 'Meetings', links: [
+            { to: '/admin/meetings/schedule', icon: CalendarPlus, label: 'Meeting Schedule' },
+        ]
+    },
+    {
         section: 'Leave', links: [
             { to: '/admin/leave-requests', icon: FileText, label: 'Leave Requests' },
             { to: '/admin/leave-types', icon: CalendarCheck, label: 'Leave Types' },
@@ -28,7 +33,8 @@ const adminLinks = [
     },
     {
         section: 'Attendance & Time', links: [
-            { to: '/admin/attendance', icon: Clock, label: 'Attendance' },
+            { to: '/admin/my-attendance', icon: Clock, label: 'My Attendance' },
+            { to: '/admin/attendance', icon: ClipboardCheck, label: 'Team Attendance' },
             { to: '/admin/holidays', icon: Gift, label: 'Holidays' },
         ]
     },
@@ -65,6 +71,11 @@ const hrLinks = [
         ]
     },
     {
+        section: 'Meetings', links: [
+            { to: '/hr/meetings/schedule', icon: CalendarPlus, label: 'Meeting Schedule' },
+        ]
+    },
+    {
         section: 'Leave', links: [
             { to: '/hr/leave-requests', icon: FileText, label: 'Leave Requests' },
             { to: '/hr/leave-types', icon: CalendarCheck, label: 'Leave Types' },
@@ -73,7 +84,8 @@ const hrLinks = [
     },
     {
         section: 'Attendance & Time', links: [
-            { to: '/hr/attendance', icon: Clock, label: 'Attendance' },
+            { to: '/hr/my-attendance', icon: Clock, label: 'My Attendance' },
+            { to: '/hr/attendance', icon: ClipboardCheck, label: 'Team Attendance' },
             { to: '/hr/holidays', icon: Gift, label: 'Holidays' },
         ]
     },
@@ -112,10 +124,14 @@ const employeeLinks = [
         ]
     },
     {
+        section: 'Meetings', links: [
+            { to: '/employee/meetings/schedule', icon: CalendarPlus, label: 'Meeting Schedule' },
+        ]
+    },
+    {
         section: 'Leave', links: [
             { to: '/employee/apply-leave', icon: CalendarPlus, label: 'Apply Leave' },
             { to: '/employee/leave-status', icon: FileText, label: 'Leave Status' },
-            { to: '/employee/leave-history', icon: History, label: 'Leave History' },
             { to: '/employee/assigned-tasks', icon: ClipboardList, label: 'Assigned Tasks' },
             { to: '/employee/wfh-policy', icon: Home, label: 'WFH Policy' },
         ]
@@ -157,6 +173,11 @@ const pmLinks = [
             { to: '/pm/tasks', icon: ListTodo, label: 'Tasks' },
             { to: '/pm/team', icon: Users2, label: 'Team' },
             { to: '/pm/chat', icon: MessageSquare, label: 'Chat' },
+        ]
+    },
+    {
+        section: 'Attendance & Time', links: [
+            { to: '/pm/my-attendance', icon: Clock, label: 'My Attendance' },
         ]
     },
     {
@@ -240,12 +261,30 @@ const Sidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen, unreadCou
                     </div>
                 ))}
             </nav>
-            <div className="sidebar-powered" style={{ padding: '16px', borderTop: '1px solid var(--border-light)', marginTop: 'auto' }}>
-                <div className="sidebar-powered-inner" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', opacity: collapsed ? 0 : 1, transition: 'opacity var(--transition)', whiteSpace: 'nowrap' }}>
-                    <span className="sidebar-powered-text" style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Powered by</span>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: '2px' }}>
-                        <img src={logoLight} alt="Learnlike Logo" className="sidebar-powered-logo logo-light" style={{ height: '24px', width: 'auto' }} />
-                        <img src={logoDark} alt="Learnlike Logo" className="sidebar-powered-logo logo-dark" style={{ height: '24px', width: 'auto' }} />
+
+            <div className="sidebar-powered" style={{ padding: '12px 16px', borderTop: '1px solid var(--border-light)', marginTop: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                {/* Show LL icon only when collapsed */}
+                <div className="sidebar-logo-img-wrapper" style={{
+                    display: collapsed ? 'flex' : 'none',
+                    alignItems: 'center',
+                    flexShrink: 0
+                }}>
+                    <img src={logoHeader} alt="LL Logo" style={{ height: '36px', width: '36px', maxWidth: 'none', display: 'block' }} />
+                </div>
+                {/* Show "Powered by Learnlike" only when expanded */}
+                <div style={{
+                    display: 'flex', flexDirection: 'column', gap: 1,
+                    opacity: collapsed ? 0 : 1,
+                    maxWidth: collapsed ? 0 : 200,
+                    overflow: 'hidden',
+                    transition: 'opacity var(--transition), max-width var(--transition)',
+                    whiteSpace: 'nowrap',
+                    pointerEvents: collapsed ? 'none' : 'auto',
+                }}>
+                    <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Powered by</span>
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                        <img src={logoLight} alt="Learnlike" className="sidebar-powered-logo logo-light" style={{ height: '18px', width: 'auto' }} />
+                        <img src={logoDark} alt="Learnlike" className="sidebar-powered-logo logo-dark" style={{ height: '18px', width: 'auto' }} />
                     </div>
                 </div>
             </div>

@@ -517,11 +517,6 @@ class LeaveController {
     }
 
     private function createLeaveType() {
-        if ($this->user['role'] !== 'hr' && $this->user['role'] !== 'admin') {
-            Response::json(false, "Forbidden", null, 403);
-            return;
-        }
-
         $data = json_decode(file_get_contents("php://input"), true);
         if (!isset($data['name']) || !isset($data['code'])) {
             Response::json(false, "Missing required fields", null, 400);

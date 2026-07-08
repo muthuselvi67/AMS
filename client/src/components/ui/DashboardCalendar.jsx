@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { ChevronLeft, ChevronRight, Clock, FileText, X, Users, CalendarDays } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Clock, FileText, X, Users, CalendarDays, CalendarPlus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { createPortal } from 'react-dom';
 import api from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
 
@@ -41,22 +42,23 @@ export default function DashboardCalendar() {
     const [modal, setModal] = useState(null);   // { date: Date, dateStr: 'YYYY-MM-DD' }
     const [dayLeaves, setDayLeaves] = useState([]);
     const [leaveLoading, setLeaveLoading] = useState(false);
+    
+    /* ── employees for birthdays ── */
+    const [employees, setEmployees] = useState([]);
 
     const today = new Date();
     const navigate = useNavigate();
     const { user } = useAuth();
 
     /* ── role-aware quick-action paths ── */
-    const role = user?.role || 'employee';
-    const attendancePath = role === 'admin' ? '/admin/attendance'
-        : role === 'hr' ? '/hr/attendance'
-            : '/employee/attendance';
+    const role = user?.role?.toLowerCase() || 'employee';
+    const attendancePath = role === 'employee' ? '/employee/attendance' : `/${role}/my-attendance`;
     const leavePath = role === 'admin' ? '/admin/leave-requests'
         : role === 'hr' ? '/hr/leave-requests'
             : '/employee/apply-leave';
 
     /* ── role-aware button labels ── */
-    const attendanceLabel = role === 'employee' ? 'Add Attendance' : 'View Attendance';
+    const attendanceLabel = role === 'employee' ? 'Add Attendance' : 'My Attendance';
     const leaveLabel = role === 'employee' ? 'Apply Leave' : 'View Requests';
 
     useEffect(() => {
@@ -69,6 +71,10 @@ export default function DashboardCalendar() {
                 const list = data.data?.leaves || data.data || [];
                 setLeaves(list);
             })
+            .catch(console.error);
+            
+        api.get('/users')
+            .then(({ data }) => setEmployees(data.data || []))
             .catch(console.error);
     }, [currentDate.getFullYear(), currentDate.getMonth()]);
 
@@ -134,6 +140,18 @@ export default function DashboardCalendar() {
         }
     });
 
+    /* birthdays this month keyed by day-of-month */
+    const birthdayMap = {};
+    employees.forEach(emp => {
+        if (!emp.dateOfBirth) return;
+        const dob = parseYYYYMMDD(emp.dateOfBirth);
+        if (dob && dob.getMonth() === mo) {
+            const dayNum = dob.getDate();
+            birthdayMap[dayNum] = birthdayMap[dayNum] || [];
+            birthdayMap[dayNum].push(emp);
+        }
+    });
+
     /* build cells — 35 (5 rows) or 42 (6 rows) depending on overflow */
     const totalCells = firstDay + totalDays > 35 ? 42 : 35;
     const cells = [];
@@ -154,7 +172,8 @@ export default function DashboardCalendar() {
                 isToday,
                 isSunday,
                 holidays: holidayMap[dayNum] || [],
-                leaves: leaveMap[dayNum] || []
+                leaves: leaveMap[dayNum] || [],
+                birthdays: birthdayMap[dayNum] || []
             });
         } else {
             cells.push({ day: offset - totalDays + 1, current: false, isSunday });
@@ -312,6 +331,26 @@ export default function DashboardCalendar() {
         marginTop: '2px',
     };
 
+    /* Employee Birthday pill style */
+    const pillStyleBirthday = {
+        background: '#FEF3C7',
+        color: '#D97706',
+        fontSize: '11px',
+        fontWeight: 600,
+        padding: '3px 8px',
+        borderRadius: '6px',
+        whiteSpace: 'nowrap',
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+        cursor: 'pointer',
+        lineHeight: '1.4',
+        borderLeft: '3px solid #F59E0B',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 4,
+        marginTop: '2px',
+    };
+
     /* ── leave-type badge ── */
     const leaveBadge = (leave) => {
         const color = leave.leave_type_color || leave.leaveType?.color || '#1565C0';
@@ -348,97 +387,87 @@ export default function DashboardCalendar() {
             <div style={{ background: 'var(--bg-white)', borderRadius: 12, border: '1px solid var(--border)', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
 
                 {/* ── Header ── */}
-                <div className="calendar-header" style={{ ...headerStyle, flexWrap: 'wrap', justifyContent: 'space-between' }}>
-                    {/* Left: Today + nav + month title */}
-                    <div className="calendar-header-left" style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1 }}>
-                        <button
-                            onClick={goToday}
-                            style={{
-                                padding: '8px 16px',
-                                fontSize: '14px',
-                                fontWeight: 600,
-                                border: '1px solid var(--border)',
-                                borderRadius: 8,
-                                background: 'var(--bg-white)',
-                                color: 'var(--text-primary)',
-                                cursor: 'pointer',
-                                transition: 'background 0.15s',
-                            }}
-                            onMouseOver={e => e.currentTarget.style.background = 'var(--bg-light)'}
-                            onMouseOut={e => e.currentTarget.style.background = 'var(--bg-white)'}
-                        >
-                            Today
-                        </button>
-
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                            <button
-                                onClick={goPrev}
-                                style={{ border: 'none', background: 'transparent', cursor: 'pointer', borderRadius: '50%', width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)' }}
-                                onMouseOver={e => e.currentTarget.style.background = 'var(--bg-light)'}
-                                onMouseOut={e => e.currentTarget.style.background = 'transparent'}
-                            >
-                                <ChevronLeft size={20} />
-                            </button>
-                            <button
-                                onClick={goNext}
-                                style={{ border: 'none', background: 'transparent', cursor: 'pointer', borderRadius: '50%', width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)' }}
-                                onMouseOver={e => e.currentTarget.style.background = 'var(--bg-light)'}
-                                onMouseOut={e => e.currentTarget.style.background = 'transparent'}
-                            >
-                                <ChevronRight size={20} />
-                            </button>
+                <div className="calendar-header" style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 24, padding: '20px 24px', borderBottom: '1px solid var(--border)', background: 'var(--bg-white)', borderRadius: '12px 12px 0 0' }}>
+                    {/* Left: Icon + month title + nav */}
+                    <div className="calendar-header-left" style={{ display: 'flex', alignItems: 'center', gap: 20, flex: 1 }}>
+                        <div style={{ width: 48, height: 48, borderRadius: '50%', background: '#A78BFA', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', boxShadow: '0 4px 14px rgba(167, 139, 250, 0.4)' }}>
+                            <CalendarDays size={24} />
                         </div>
 
-                        <h2 className="calendar-month-title" style={{ margin: 0, fontSize: '22px', fontWeight: 600, color: 'var(--text-primary)', letterSpacing: '-0.2px' }}>
+                        <h2 className="calendar-month-title" style={{ margin: 0, fontSize: '24px', fontWeight: 800, color: 'var(--text-color)', letterSpacing: '-0.5px' }}>
                             {MONTHS[mo]} {yr}
                         </h2>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginLeft: 8 }}>
+                            <button
+                                onClick={goToday}
+                                style={{
+                                    padding: '8px 20px',
+                                    fontSize: '13px',
+                                    fontWeight: 700,
+                                    border: '1px solid var(--border)',
+                                    borderRadius: 8,
+                                    background: 'var(--bg-white)',
+                                    color: 'var(--primary)',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.15s',
+                                }}
+                                onMouseOver={e => { e.currentTarget.style.borderColor = 'var(--primary)'; e.currentTarget.style.background = 'var(--bg-light)'; }}
+                                onMouseOut={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'var(--bg-white)'; }}
+                            >
+                                Today
+                            </button>
+
+                            <div style={{ display: 'flex', gap: 8 }}>
+                                <button
+                                    onClick={goPrev}
+                                    style={{ padding: '8px 12px', border: '1px solid var(--border)', background: 'var(--bg-white)', cursor: 'pointer', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)', transition: 'all 0.15s' }}
+                                    onMouseOver={e => { e.currentTarget.style.borderColor = 'var(--primary)'; e.currentTarget.style.background = 'var(--bg-light)'; }}
+                                    onMouseOut={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'var(--bg-white)'; }}
+                                >
+                                    <ChevronLeft size={16} strokeWidth={2.5} />
+                                </button>
+                                <button
+                                    onClick={goNext}
+                                    style={{ padding: '8px 12px', border: '1px solid var(--border)', background: 'var(--bg-white)', cursor: 'pointer', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)', transition: 'all 0.15s' }}
+                                    onMouseOver={e => { e.currentTarget.style.borderColor = 'var(--primary)'; e.currentTarget.style.background = 'var(--bg-light)'; }}
+                                    onMouseOut={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'var(--bg-white)'; }}
+                                >
+                                    <ChevronRight size={16} strokeWidth={2.5} />
+                                </button>
+                            </div>
+                        </div>
                     </div>
 
                     {/* Right: Quick-action buttons */}
-                    <div className="calendar-header-right" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div className="calendar-header-right" style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', flexWrap: 'wrap', gap: 12 }}>
                         <button
                             onClick={() => navigate(attendancePath)}
-                            style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 8,
-                                padding: '8px 16px',
-                                fontSize: '14px',
-                                fontWeight: 600,
-                                border: '1px solid var(--primary)',
-                                borderRadius: 8,
-                                background: 'var(--bg-white)',
-                                color: 'var(--primary)',
-                                cursor: 'pointer',
-                                transition: 'all 0.15s',
-                                whiteSpace: 'nowrap',
-                            }}
-                            onMouseOver={e => { e.currentTarget.style.background = 'var(--primary-light)'; }}
+                            style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 18px', fontSize: '13px', fontWeight: 600, border: '1px solid var(--primary)', borderRadius: 8, background: 'var(--bg-white)', color: 'var(--primary)', cursor: 'pointer', transition: 'all 0.15s', whiteSpace: 'nowrap' }}
+                            onMouseOver={e => { e.currentTarget.style.background = 'var(--bg-light)'; }}
                             onMouseOut={e => { e.currentTarget.style.background = 'var(--bg-white)'; }}
                         >
                             <Clock size={16} />
                             {attendanceLabel}
                         </button>
 
+                        {(role === 'admin' || role === 'hr') && (
+                            <button
+                                onClick={() => navigate(`/${role}/attendance`)}
+                                style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 18px', fontSize: '13px', fontWeight: 600, border: '1px solid var(--primary)', borderRadius: 8, background: 'var(--bg-white)', color: 'var(--primary)', cursor: 'pointer', transition: 'all 0.15s', whiteSpace: 'nowrap' }}
+                                onMouseOver={e => { e.currentTarget.style.background = 'var(--bg-light)'; }}
+                                onMouseOut={e => { e.currentTarget.style.background = 'var(--bg-white)'; }}
+                            >
+                                <Users size={16} />
+                                View Attendance
+                            </button>
+                        )}
+
                         <button
                             onClick={() => navigate(leavePath)}
-                            style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 8,
-                                padding: '8px 16px',
-                                fontSize: '14px',
-                                fontWeight: 600,
-                                border: 'none',
-                                borderRadius: 8,
-                                background: 'var(--primary)',
-                                color: '#fff',
-                                cursor: 'pointer',
-                                transition: 'all 0.15s',
-                                whiteSpace: 'nowrap',
-                            }}
-                            onMouseOver={e => { e.currentTarget.style.background = 'var(--primary-dark)'; }}
-                            onMouseOut={e => { e.currentTarget.style.background = 'var(--primary)'; }}
+                            style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 18px', fontSize: '13px', fontWeight: 600, border: 'none', borderRadius: 8, background: 'var(--primary)', color: '#fff', cursor: 'pointer', transition: 'all 0.15s', whiteSpace: 'nowrap', boxShadow: '0 2px 10px rgba(139, 92, 246, 0.3)' }}
+                            onMouseOver={e => { e.currentTarget.style.opacity = 0.9; }}
+                            onMouseOut={e => { e.currentTarget.style.opacity = 1; }}
                         >
                             <FileText size={16} />
                             {leaveLabel}
@@ -448,7 +477,7 @@ export default function DashboardCalendar() {
 
                 {/* ── Day-name column headers ── */}
                 <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
-                    <div style={{ minWidth: 768 }}>
+                    <div style={{ minWidth: 0 }}>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', borderBottom: '1px solid var(--border)' }}>
                             {DAY_FULL.map((d, idx) => (
                                 <div key={d} style={dayHeaderStyle(idx)}>{d}</div>
@@ -563,6 +592,20 @@ export default function DashboardCalendar() {
                                     </div>
                                 );
                             })}
+
+                            {cell.current && cell.birthdays && cell.birthdays.map((emp, bi) => (
+                                <div
+                                    key={`bday-${bi}`}
+                                    className="calendar-pill"
+                                    style={pillStyleBirthday}
+                                    title={`${emp.name}'s Birthday`}
+                                    onMouseOver={e => e.currentTarget.style.opacity = '0.85'}
+                                    onMouseOut={e => e.currentTarget.style.opacity = '1'}
+                                >
+                                    <span className="calendar-pill-icon">🎂</span>
+                                    <span className="calendar-pill-text" style={{ marginLeft: 4 }}>{emp.name.split(' ')[0]}'s Bday</span>
+                                </div>
+                            ))}
                         </div>
                     ))}
                 </div>
@@ -589,6 +632,7 @@ export default function DashboardCalendar() {
                         { type: 'saturday_leave', label: 'Office Leave (1st/3rd/5th Sat)', color: '#DB2777', icon: '🏡' },
                         { type: 'working_saturday', label: 'Working Sat (2nd/4th Sat)', color: '#15803D', icon: '💼' },
                         { type: 'employee_leave', label: 'Employee Leave', color: '#16A34A', icon: '✈️' },
+                        { type: 'birthday', label: 'Birthday', color: '#F59E0B', icon: '🎂' },
                     ].map(item => (
                         <div key={item.type} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                             <span style={{
@@ -609,7 +653,7 @@ export default function DashboardCalendar() {
             {/* ══════════════════════════════════════════════
             Leave-on-Date Modal
         ══════════════════════════════════════════════ */}
-            {modal && (
+            {modal && createPortal(
                 <div
                     onClick={() => setModal(null)}
                     style={{
@@ -691,7 +735,7 @@ export default function DashboardCalendar() {
                         </div>
 
                         {/* Modal Body */}
-                        <div style={{ overflowY: 'auto', flex: 1, padding: '12px 24px 24px' }}>
+                        <div style={{ overflowY: 'auto', padding: '12px 24px 24px' }}>
                             {leaveLoading ? (
                                 <div style={{ textAlign: 'center', padding: '40px 0', color: '#9CA3AF' }}>
                                     <div style={{
@@ -828,7 +872,7 @@ export default function DashboardCalendar() {
                         )}
                     </div>
                 </div>
-            )}
+            , document.body)}
 
             {/* ── keyframe animations ── */}
             <style>{`

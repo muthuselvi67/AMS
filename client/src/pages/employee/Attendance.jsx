@@ -10,7 +10,7 @@ import {
 /* ─────────────────────────────────────────
    Helpers
 ───────────────────────────────────────── */
-const fmtTime  = (d) => d ? new Date(d).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--';
+const fmtTime = (d) => d ? new Date(d).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--';
 const fmtShort = (d) => d ? new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) : '--';
 
 /* ── Office Geofence Configurations ── */
@@ -35,7 +35,7 @@ const haversineDistance = (lat1, lon1, lat2, lon2) => {
     const dLat = toRad(lat2 - lat1);
     const dLon = toRad(lon2 - lon1);
     const a = Math.sin(dLat / 2) ** 2 +
-              Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+        Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 };
 
@@ -98,7 +98,7 @@ const getLocation = () => new Promise((resolve, reject) => {
 
 const getAddress = async (lat, lng) => {
     try {
-        const res  = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18`);
+        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18`);
         const data = await res.json();
         return data.display_name || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
     } catch { return `${lat.toFixed(4)}, ${lng.toFixed(4)}`; }
@@ -108,10 +108,10 @@ const getAddress = async (lat, lng) => {
    Selfie Capture Modal
 ───────────────────────────────────────── */
 const SelfieCapture = ({ onConfirm, onCancel }) => {
-    const videoRef  = React.useRef(null);
+    const videoRef = React.useRef(null);
     const canvasRef = React.useRef(null);
-    const [stream,   setStream]   = React.useState(null);
-    const [preview,  setPreview]  = React.useState(null);
+    const [stream, setStream] = React.useState(null);
+    const [preview, setPreview] = React.useState(null);
     const [camError, setCamError] = React.useState('');
     const [starting, setStarting] = React.useState(true);
 
@@ -129,7 +129,7 @@ const SelfieCapture = ({ onConfirm, onCancel }) => {
                 setStream(s);
                 if (videoRef.current) {
                     videoRef.current.srcObject = s;
-                    videoRef.current.play().catch(() => {});
+                    videoRef.current.play().catch(() => { });
                 }
                 setStarting(false);
             })
@@ -154,17 +154,17 @@ const SelfieCapture = ({ onConfirm, onCancel }) => {
             .getUserMedia({ video: { facingMode: 'user' } })
             .then(s => {
                 setStream(s);
-                if (videoRef.current) { videoRef.current.srcObject = s; videoRef.current.play().catch(() => {}); }
+                if (videoRef.current) { videoRef.current.srcObject = s; videoRef.current.play().catch(() => { }); }
                 setStarting(false);
             })
             .catch(() => setCamError('Camera still unavailable. You can skip selfie and mark attendance.'));
     };
 
     const capture = () => {
-        const video  = videoRef.current;
+        const video = videoRef.current;
         const canvas = canvasRef.current;
         if (!video || !canvas) return;
-        canvas.width  = video.videoWidth  || 640;
+        canvas.width = video.videoWidth || 640;
         canvas.height = video.videoHeight || 480;
         const ctx = canvas.getContext('2d');
         ctx.translate(canvas.width, 0);
@@ -181,7 +181,7 @@ const SelfieCapture = ({ onConfirm, onCancel }) => {
             .getUserMedia({ video: { facingMode: 'user' } })
             .then(s => {
                 setStream(s);
-                if (videoRef.current) { videoRef.current.srcObject = s; videoRef.current.play().catch(() => {}); }
+                if (videoRef.current) { videoRef.current.srcObject = s; videoRef.current.play().catch(() => { }); }
                 setStarting(false);
             })
             .catch(() => setCamError('Camera unavailable. You can skip selfie and mark attendance.'));
@@ -288,21 +288,21 @@ const SelfieCapture = ({ onConfirm, onCancel }) => {
    Component
 ───────────────────────────────────────── */
 const Attendance = () => {
-    const [attendance,     setAttendance]     = useState(null);
-    const [loading,        setLoading]        = useState(true);
-    const [actionLoading,  setActionLoading]  = useState(false);
-    const [locError,       setLocError]       = useState('');
-    const [history,        setHistory]        = useState([]);
-    const [wfhMode,        setWfhMode]        = useState(false);          // toggle before check-in
-    const [wfhUpdates,     setWfhUpdates]     = useState([]);             // today's WFH update log
-    const [updateText,     setUpdateText]     = useState('');
-    const [isFinal,        setIsFinal]        = useState(false);
-    const [submitLoading,  setSubmitLoading]  = useState(false);
+    const [attendance, setAttendance] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [actionLoading, setActionLoading] = useState(false);
+    const [locError, setLocError] = useState('');
+    const [history, setHistory] = useState([]);
+    const [wfhMode, setWfhMode] = useState(false);          // toggle before check-in
+    const [wfhUpdates, setWfhUpdates] = useState([]);             // today's WFH update log
+    const [updateText, setUpdateText] = useState('');
+    const [isFinal, setIsFinal] = useState(false);
+    const [submitLoading, setSubmitLoading] = useState(false);
     const [timeSinceLastUpdate, setTimeSinceLastUpdate] = useState(0);
     const [inEODWindow, setInEODWindow] = useState(false);
-    const [currentCoords,   setCurrentCoords]  = useState(null);
-    const [showSelfie,      setShowSelfie]      = useState(false);   // selfie modal open
-    const [pendingAction,   setPendingAction]   = useState(null);    // { type, loc, isWFH }
+    const [currentCoords, setCurrentCoords] = useState(null);
+    const [showSelfie, setShowSelfie] = useState(false);   // selfie modal open
+    const [pendingAction, setPendingAction] = useState(null);    // { type, loc, isWFH }
     const [selfieViewModal, setSelfieViewModal] = useState(null);
     const [showLocSelectModal, setShowLocSelectModal] = useState(false);
     const [pendingLocActionType, setPendingLocActionType] = useState(null); // 'in' or 'out'
@@ -311,17 +311,17 @@ const Attendance = () => {
     useEffect(() => {
         getLocation()
             .then(loc => setCurrentCoords(loc))
-            .catch(() => {}); // silently ignore on initial page load
+            .catch(() => { }); // silently ignore on initial page load
     }, []);
 
     const today = new Date().toLocaleDateString('en-IN', {
         weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
     });
 
-    const isCheckedIn  = !!attendance?.checkIn?.time;
+    const isCheckedIn = !!attendance?.checkIn?.time;
     const isCheckedOut = !!attendance?.checkOut?.time;
-    const isWFHToday   = !!attendance?.workFromHome;
-    const hasFinalEOD  = wfhUpdates.some(u => u.is_final);
+    const isWFHToday = !!attendance?.workFromHome;
+    const hasFinalEOD = wfhUpdates.some(u => u.is_final);
 
     /* ── Fetch today + history + WFH updates ── */
     const fetchData = useCallback(async () => {
@@ -356,7 +356,7 @@ const Attendance = () => {
 
         const checkTime = () => {
             const now = new Date();
-            
+
             // Check EOD window (17:30 - 18:00)
             const hrs = now.getHours();
             const mins = now.getMinutes();
@@ -364,8 +364,8 @@ const Attendance = () => {
             setInEODWindow(timeInMins >= 17 * 60 + 30 && timeInMins <= 18 * 60);
 
             // Find last update time
-            const lastTime = wfhUpdates.length > 0 
-                ? wfhUpdates[wfhUpdates.length - 1].submitted_at 
+            const lastTime = wfhUpdates.length > 0
+                ? wfhUpdates[wfhUpdates.length - 1].submitted_at
                 : attendance?.checkIn?.time;
 
             if (!lastTime) return;
@@ -393,7 +393,7 @@ const Attendance = () => {
             setShowLocSelectModal(true);
             return;
         }
-        
+
         proceedWithLocation(type, null);
     };
 
@@ -613,8 +613,8 @@ const Attendance = () => {
                 </div>
 
                 {/* ── Stats + History ── */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 20, minWidth: 0 }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 16 }}>
                         <div className="card" style={{ padding: 20, textAlign: 'center', background: 'var(--secondary-light)', border: 'none' }}>
                             <div style={{ fontSize: 30, fontWeight: 800, color: 'var(--secondary-dark)' }}>{history.filter(h => h.status === 'present').length}</div>
                             <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--secondary-dark)', opacity: 0.8 }}>Present Days</div>
@@ -656,12 +656,12 @@ const Attendance = () => {
                                                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                                                     {h.check_in_latitude ? (
                                                         <a href={`https://www.google.com/maps/search/?api=1&query=${h.check_in_latitude},${h.check_in_longitude}`}
-                                                           target="_blank" rel="noopener noreferrer"
-                                                           style={{ color: 'var(--secondary)', textDecoration: 'none', fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'flex-start', gap: 4, lineHeight: 1.3 }}>
+                                                            target="_blank" rel="noopener noreferrer"
+                                                            style={{ color: 'var(--secondary)', textDecoration: 'none', fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'flex-start', gap: 4, lineHeight: 1.3 }}>
                                                             <MapPin size={10} style={{ marginTop: 2, flexShrink: 0 }} />
                                                             <span style={{ whiteSpace: 'normal', wordBreak: 'break-word', display: 'inline-block', textAlign: 'left' }}>
-                                                                {h.work_from_home 
-                                                                    ? (h.check_in_address || `WFH: ${parseFloat(h.check_in_latitude).toFixed(3)}, ${parseFloat(h.check_in_longitude).toFixed(3)}`) 
+                                                                {h.work_from_home
+                                                                    ? (h.check_in_address || `WFH: ${parseFloat(h.check_in_latitude).toFixed(3)}, ${parseFloat(h.check_in_longitude).toFixed(3)}`)
                                                                     : (h.check_in_address || 'LearnLike')}
                                                             </span>
                                                         </a>
@@ -671,12 +671,12 @@ const Attendance = () => {
                                                     {h.check_out_time ? (
                                                         h.check_out_latitude ? (
                                                             <a href={`https://www.google.com/maps/search/?api=1&query=${h.check_out_latitude},${h.check_out_longitude}`}
-                                                               target="_blank" rel="noopener noreferrer"
-                                                               style={{ color: 'var(--danger)', textDecoration: 'none', fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'flex-start', gap: 4, lineHeight: 1.3 }}>
+                                                                target="_blank" rel="noopener noreferrer"
+                                                                style={{ color: 'var(--danger)', textDecoration: 'none', fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'flex-start', gap: 4, lineHeight: 1.3 }}>
                                                                 <MapPin size={10} style={{ marginTop: 2, flexShrink: 0 }} />
                                                                 <span style={{ whiteSpace: 'normal', wordBreak: 'break-word', display: 'inline-block', textAlign: 'left' }}>
-                                                                    {h.work_from_home 
-                                                                        ? (h.check_out_address || `WFH: ${parseFloat(h.check_out_latitude).toFixed(3)}, ${parseFloat(h.check_out_longitude).toFixed(3)}`) 
+                                                                    {h.work_from_home
+                                                                        ? (h.check_out_address || `WFH: ${parseFloat(h.check_out_latitude).toFixed(3)}, ${parseFloat(h.check_out_longitude).toFixed(3)}`)
                                                                         : (h.check_out_address || 'LearnLike')}
                                                                 </span>
                                                             </a>
@@ -804,8 +804,8 @@ const Attendance = () => {
                             `}</style>
                             <span style={{ fontSize: 16 }}>{timeSinceLastUpdate >= 120 ? '⚠️' : '⏱️'}</span>
                             <div style={{ fontSize: 13, fontWeight: 600, color: timeSinceLastUpdate >= 120 ? '#991B1B' : '#1E40AF', flex: 1 }}>
-                                {timeSinceLastUpdate >= 120 
-                                    ? `WFH Policy Alert: It has been ${Math.floor(timeSinceLastUpdate / 60)}h ${timeSinceLastUpdate % 60}m since your last update. Please submit a progress update.` 
+                                {timeSinceLastUpdate >= 120
+                                    ? `WFH Policy Alert: It has been ${Math.floor(timeSinceLastUpdate / 60)}h ${timeSinceLastUpdate % 60}m since your last update. Please submit a progress update.`
                                     : `Next update due in ${120 - timeSinceLastUpdate} minutes.`
                                 }
                             </div>
@@ -846,12 +846,12 @@ const Attendance = () => {
                                         opacity: inEODWindow ? 1 : 0.65,
                                         transition: 'all 0.2s'
                                     }} title={!inEODWindow ? "The final EOD report can only be submitted between 5:30 PM and 6:00 PM" : ""}>
-                                        <input 
-                                            type="checkbox" 
-                                            checked={isFinal} 
+                                        <input
+                                            type="checkbox"
+                                            checked={isFinal}
                                             onChange={e => inEODWindow && setIsFinal(e.target.checked)}
                                             disabled={!inEODWindow}
-                                            style={{ width: 15, height: 15, accentColor: '#EF4444', cursor: inEODWindow ? 'pointer' : 'not-allowed' }} 
+                                            style={{ width: 15, height: 15, accentColor: '#EF4444', cursor: inEODWindow ? 'pointer' : 'not-allowed' }}
                                         />
                                         <span style={{ fontSize: 13, fontWeight: 600, color: isFinal ? '#DC2626' : 'var(--text-secondary)' }}>
                                             This is my final EOD report (5:30–6:00 PM only) {!inEODWindow && "🔒"}
@@ -1028,7 +1028,7 @@ const Attendance = () => {
                                     <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
                                         <MapPin size={14} color={selfieViewModal.type === 'Check-In' ? '#10B981' : '#EF4444'} style={{ marginTop: 2, flexShrink: 0 }} />
                                         <span style={{ fontSize: '11.5px', fontWeight: 600, color: '#F8FAFC', lineHeight: 1.3 }}>
-                                            {selfieViewModal.workFromHome 
+                                            {selfieViewModal.workFromHome
                                                 ? (selfieViewModal.address || 'WFH Location')
                                                 : (selfieViewModal.address || 'LearnLike Office')}
                                         </span>
@@ -1085,7 +1085,7 @@ const Attendance = () => {
                         <p style={{ margin: '0 0 20px', fontSize: 13.5, color: 'var(--text-muted)' }}>
                             Please select the office location where you are checking {pendingLocActionType === 'in' ? 'in' : 'out'}:
                         </p>
-                        
+
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 24 }}>
                             {OFFICE_LOCATIONS.map(office => (
                                 <button

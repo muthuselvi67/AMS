@@ -23,6 +23,8 @@ const pageTitles = {
     '/hr/reports': { title: 'Reports & Analytics', sub: 'Export and analyze data' },
     '/hr/payroll': { title: 'Payroll & Payslips', sub: 'Manage employee payroll' },
     '/hr/notifications': { title: 'Notifications', sub: 'Stay updated' },
+    '/admin/meetings/schedule': { title: 'Meeting Schedule', sub: 'Manage your meetings and appointments' },
+    '/hr/meetings/schedule': { title: 'Meeting Schedule', sub: 'Manage your meetings and appointments' },
     '/hr/appraisals': { title: 'Appraisals', sub: 'Manage employee performance appraisals' },
     '/hr/pm-appraisals': { title: 'PM Appraisals', sub: 'Manage project manager appraisals' },
     '/admin/appraisals': { title: 'Appraisals', sub: 'Manage employee performance appraisals' },
@@ -35,6 +37,9 @@ const pageTitles = {
     '/employee/wfh-policy': { title: 'WFH Policy', sub: 'Work from home guidelines' },
     '/employee/attendance': { title: 'Attendance', sub: 'View your attendance records' },
     '/employee/notifications': { title: 'Notifications', sub: 'Your latest updates' },
+    '/admin/my-attendance': { title: 'My Attendance', sub: 'Log your daily attendance' },
+    '/hr/my-attendance': { title: 'My Attendance', sub: 'Log your daily attendance' },
+    '/pm/my-attendance': { title: 'My Attendance', sub: 'Log your daily attendance' },
 };
 
 
@@ -245,18 +250,23 @@ const Header = ({ onMenuClick }) => {
                     <Menu size={20} />
                 </button>
                 <div className="header-title" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                    {!location.pathname.endsWith('/dashboard') && (
+                        <button className="header-btn" onClick={() => navigate(-1)} title="Go back">
+                            <ChevronLeft size={20} />
+                        </button>
+                    )}
                     {pageInfo.title !== 'Learnlike' && (
                         <>
-                            <div>
+                            <div style={{ minWidth: 0 }}>
                                 <h2>{pageInfo.title}</h2>
                                 <p>{pageInfo.sub}</p>
                             </div>
                         </>
                     )}
                 </div>
-                <div className="header-actions">
+                <div className="header-actions" style={{ marginLeft: 'auto' }}>
                     <div style={{ position: 'relative' }}>
-                        <button className="header-btn" onClick={() => { setNotifDropdownOpen(!notifDropdownOpen); setDropdownOpen(false); }} title="Notifications"
+                        <button className="header-btn" onClick={() => goNotifications()} title="Notifications"
                             style={{ position: 'relative' }}
                         >
                             <Bell size={20} />
@@ -285,106 +295,6 @@ const Header = ({ onMenuClick }) => {
                                 </span>
                             )}
                         </button>
-                        
-                        {notifDropdownOpen && (
-                            <div
-                                style={{ position: 'fixed', inset: 0, zIndex: 998 }}
-                                onClick={() => setNotifDropdownOpen(false)}
-                            />
-                        )}
-
-                        {notifDropdownOpen && (
-                            <div className="profile-dropdown-menu notif-dropdown">
-                                <div style={{ 
-                                    padding: '18px 24px', borderBottom: '1px solid rgba(0,0,0,0.05)', 
-                                    display: 'flex', justifyContent: 'space-between', alignItems: 'center', 
-                                    background: 'linear-gradient(135deg, var(--bg-card) 0%, var(--bg-light) 100%)' 
-                                }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                        <div style={{ width: 8, height: 24, borderRadius: 4, background: 'linear-gradient(135deg, var(--primary), #818CF8)' }} />
-                                        <span style={{ fontWeight: 800, fontSize: '16px', color: 'var(--text-primary)', letterSpacing: '-0.3px' }}>Notifications</span>
-                                    </div>
-                                    {unread > 0 && <span style={{ fontSize: '11px', background: 'linear-gradient(135deg, #EF4444, #F87171)', color: 'white', padding: '4px 12px', borderRadius: '20px', fontWeight: 800, boxShadow: '0 4px 10px rgba(239, 68, 68, 0.3)' }}>{unread} New</span>}
-                                </div>
-                                <div style={{ maxHeight: '400px', overflowY: 'auto', background: 'var(--bg-card)' }}>
-                                    {notifications.length === 0 ? (
-                                        <div style={{ padding: '60px 20px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '14px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
-                                            <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'var(--bg-light)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                                <Bell size={32} opacity={0.4} />
-                                            </div>
-                                            <span style={{ fontWeight: 600 }}>You're all caught up!</span>
-                                        </div>
-                                    ) : (
-                                        notifications.slice(0, 6).map(n => {
-                                            const lowerTitle = (n.title || '').toLowerCase();
-                                            let IconComp = Bell;
-                                            let iconColor = 'var(--primary)';
-                                            let iconBg = 'var(--primary-light)';
-                                            
-                                            if (lowerTitle.includes('approved')) { IconComp = CheckCircle; iconColor = '#10B981'; iconBg = '#D1FAE5'; }
-                                            else if (lowerTitle.includes('rejected')) { IconComp = XCircle; iconColor = '#EF4444'; iconBg = '#FEE2E2'; }
-                                            else if (lowerTitle.includes('leave')) { IconComp = Calendar; iconColor = '#8B5CF6'; iconBg = '#EDE9FE'; }
-                                            else if (lowerTitle.includes('handover') || lowerTitle.includes('task')) { IconComp = Briefcase; iconColor = '#F59E0B'; iconBg = '#FEF3C7'; }
-                                            else if (n.type === 'birthday' || lowerTitle.includes('birthday')) { IconComp = Cake; iconColor = '#EC4899'; iconBg = 'rgba(236, 72, 153, 0.15)'; }
-
-                                            return (
-                                                <div key={n.id} 
-                                                    onClick={() => handleNotifClick(n)}
-                                                    onMouseOver={(e) => { e.currentTarget.style.background = 'var(--bg-light)'; e.currentTarget.style.transform = 'scale(1.01)'; }}
-                                                    onMouseOut={(e) => { e.currentTarget.style.background = n.isRead ? 'transparent' : 'rgba(99, 102, 241, 0.04)'; e.currentTarget.style.transform = 'scale(1)'; }}
-                                                    style={{ 
-                                                        padding: '16px 24px', 
-                                                        borderBottom: '1px solid var(--border-light)', 
-                                                        background: n.isRead ? 'transparent' : 'rgba(99, 102, 241, 0.04)',
-                                                        cursor: 'pointer',
-                                                        transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
-                                                        display: 'flex',
-                                                        gap: '16px',
-                                                        position: 'relative'
-                                                    }}>
-                                                    {!n.isRead && <div style={{ position: 'absolute', left: 0, top: '50%', transform: 'translateY(-50%)', height: '60%', width: '4px', background: 'var(--primary)', borderRadius: '0 4px 4px 0' }} />}
-                                                    <div style={{ width: 42, height: 42, borderRadius: '12px', background: n.isRead ? 'var(--bg-light)' : iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: '1px solid rgba(0,0,0,0.03)', boxShadow: n.isRead ? 'none' : '0 4px 12px rgba(0,0,0,0.06)', transition: 'background 0.3s' }}>
-                                                        <IconComp size={18} color={n.isRead ? 'var(--text-muted)' : iconColor} strokeWidth={2.5} />
-                                                    </div>
-                                                    <div style={{ flex: 1 }}>
-                                                        <div style={{ fontWeight: 800, fontSize: '13.5px', color: n.isRead ? 'var(--text-secondary)' : 'var(--text-primary)', marginBottom: '4px', letterSpacing: '-0.2px' }}>{n.title}</div>
-                                                        <div style={{ fontSize: '12.5px', color: 'var(--text-muted)', lineHeight: 1.5 }}>{n.message}</div>
-                                                        <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '8px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 5, opacity: 0.8 }}>
-                                                            <Clock size={12} strokeWidth={2.5} />
-                                                            {new Date(n.createdAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            );
-                                        })
-                                    )}
-                                </div>
-                                <div style={{ padding: '16px 24px', background: 'var(--bg-light)', borderTop: '1px solid var(--border-light)' }}>
-                                    <button 
-                                        onClick={() => { setNotifDropdownOpen(false); goNotifications(); }}
-                                        style={{ 
-                                            width: '100%', 
-                                            padding: '14px', 
-                                            background: 'var(--text-primary)', 
-                                            border: 'none', 
-                                            color: 'var(--bg-card)', 
-                                            fontSize: '14px', 
-                                            fontWeight: 800, 
-                                            borderRadius: '12px',
-                                            cursor: 'pointer', 
-                                            textAlign: 'center',
-                                            boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                                            transition: 'transform 0.2s, box-shadow 0.2s',
-                                            letterSpacing: '0.3px'
-                                        }}
-                                        onMouseOver={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 20px rgba(0,0,0,0.15)'; }}
-                                        onMouseOut={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)'; }}
-                                    >
-                                        View All Notifications
-                                    </button>
-                                </div>
-                            </div>
-                        )}
                     </div>
                     <button
                         className="header-btn"
@@ -456,18 +366,6 @@ const Header = ({ onMenuClick }) => {
                             </div>
                         )}
                     </div>
-
-                    {!location.pathname.endsWith('/dashboard') && (
-                        <button
-                            className="header-btn"
-                            onClick={() => navigate(-1)}
-                            title="Go back"
-                            style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px', fontWeight: 600, color: 'var(--primary)', border: '1px solid var(--primary)', borderRadius: '8px', padding: '5px 10px', height: '38px', width: 'auto', background: 'transparent' }}
-                        >
-                            <ChevronLeft size={16} />
-                            <span style={{ fontSize: '13px' }}>Back</span>
-                        </button>
-                    )}
 
                     <button className="header-btn" onClick={handleLogout} title="Logout" style={{ color: '#EF4444' }}>
                         <LogOut size={20} />

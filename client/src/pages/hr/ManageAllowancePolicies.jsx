@@ -70,7 +70,7 @@ const ManageAllowancePolicies = () => {
 
     return (
         <div className="fade-in">
-            <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
                 <div>
                     <h1>Allowance Policies</h1>
                     <p>Configure allowance categories and maximum reimbursement limits</p>

@@ -79,29 +79,29 @@ const EmployeeProfileView = () => {
         setForm({
           name: emp.name || '',
           phone: emp.phone || '',
-          phoneSecondary: emp.phoneSecondary || '',
+          phoneSecondary: emp.phoneSecondary || emp.phone_secondary || '',
           department: emp.department || '',
           position: emp.position || '',
           avatar: emp.avatar || null,
           coverPhoto: emp.coverPhoto || null,
-          gradDegree: emp.gradDegree || '',
-          gradInstitution: emp.gradInstitution || '',
-          gradYear: emp.gradYear || '',
-          gradGpa: emp.gradGpa || '',
-          portfolioWebsite: emp.portfolioWebsite || '',
-          portfolioGithub: emp.portfolioGithub || '',
-          portfolioLinkedin: emp.portfolioLinkedin || '',
-          portfolioResume: emp.portfolioResume || '',
-          bloodGroup: emp.bloodGroup || '',
-          dateOfBirth: emp.dateOfBirth ? emp.dateOfBirth.slice(0, 10) : '',
-          employeeId: emp.employeeId || '',
-          joiningDate: emp.joiningDate ? emp.joiningDate.slice(0, 10) : '',
-          idCardPhoto: emp.idCardPhoto || null,
-          bankName: emp.bankName || '',
-          accountName: emp.accountName || '',
-          accountNumber: emp.accountNumber || '',
-          ifscCode: emp.ifscCode || '',
-          branchName: emp.branchName || ''
+          gradDegree: emp.gradDegree || emp.grad_degree || '',
+          gradInstitution: emp.gradInstitution || emp.grad_institution || '',
+          gradYear: emp.gradYear || emp.grad_year || '',
+          gradGpa: emp.gradGpa || emp.grad_gpa || '',
+          portfolioWebsite: emp.portfolioWebsite || emp.portfolio_website || '',
+          portfolioGithub: emp.portfolioGithub || emp.portfolio_github || '',
+          portfolioLinkedin: emp.portfolioLinkedin || emp.portfolio_linkedin || '',
+          portfolioResume: emp.portfolioResume || emp.portfolio_resume || '',
+          bloodGroup: emp.bloodGroup || emp.blood_group || '',
+          dateOfBirth: (emp.dateOfBirth || emp.date_of_birth) ? (emp.dateOfBirth || emp.date_of_birth).slice(0, 10) : '',
+          employeeId: emp.employeeId || emp.employee_id || '',
+          joiningDate: (emp.joiningDate || emp.joining_date) ? (emp.joiningDate || emp.joining_date).slice(0, 10) : '',
+          idCardPhoto: emp.idCardPhoto || emp.id_card_photo || null,
+          bankName: emp.bankName || emp.bank_name || '',
+          accountName: emp.accountName || emp.account_name || '',
+          accountNumber: emp.accountNumber || emp.account_number || '',
+          ifscCode: emp.ifscCode || emp.ifsc_code || '',
+          branchName: emp.branchName || emp.branch_name || ''
         });
 
         const attRes = await api.get(`/attendance`, { params: { employeeId: id } });
@@ -308,35 +308,7 @@ const EmployeeProfileView = () => {
         </div>
 
         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-          {!isEditing && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginRight: 8 }}>
-              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-secondary)' }}>Month:</span>
-              <select
-                value={selectedMonth}
-                onChange={e => setSelectedMonth(e.target.value)}
-                className="form-control"
-                style={{
-                  padding: '6px 12px',
-                  borderRadius: 12,
-                  border: '1px solid var(--border-light)',
-                  background: 'var(--bg-card)',
-                  color: 'var(--text-primary)',
-                  fontSize: 13,
-                  fontWeight: 700,
-                  outline: 'none',
-                  width: 'auto',
-                  height: 38,
-                  cursor: 'pointer',
-                  boxShadow: 'var(--shadow-sm)'
-                }}
-              >
-                <option value="">All Time</option>
-                {dropdownMonths.map(ym => (
-                  <option key={ym} value={ym}>{formatMonthLabel(ym)}</option>
-                ))}
-              </select>
-            </div>
-          )}
+
           {isEditing ? (
             <>
               <button
@@ -374,7 +346,7 @@ const EmployeeProfileView = () => {
         {/* ══════════ LEFT COLUMN ══════════ */}
         <div style={{ flex: '1 1 560px', display: 'flex', flexDirection: 'column', gap: 20 }}>
 
-          {/* Name / Info Panel */}
+          {/* Details Card */}
           <Panel>
             {isEditing ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -434,7 +406,7 @@ const EmployeeProfileView = () => {
                 <h2 style={{ fontSize: 30, fontWeight: 900, color: 'var(--text-primary)', margin: '0 0 10px 0', letterSpacing: '-0.6px' }}>
                   {employee.name}
                 </h2>
-                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', marginBottom: 22 }}>
+                 <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', marginBottom: 22 }}>
                   <span style={{ background: 'var(--primary-light)', color: 'var(--primary)', padding: '5px 14px', borderRadius: 20, fontSize: 12, fontWeight: 700 }}>
                     {employee.department || 'No Department'}
                   </span>
@@ -442,21 +414,23 @@ const EmployeeProfileView = () => {
                     {employee.position || 'No Position'}
                   </span>
                   <span style={{ display: 'flex', alignItems: 'center', gap: 5, color: 'var(--text-muted)', fontSize: 12, fontWeight: 600 }}>
-                    <Briefcase size={13} /> ID: {employee.employeeId || 'N/A'}
+                    <Briefcase size={13} /> ID: {employee.employeeId || employee.employee_id || 'N/A'}
                   </span>
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 18, padding: 16, background: 'var(--bg-light)', borderRadius: 12, border: '1px solid var(--border-light)' }}>
                   <InfoRow label="Email" value={employee.email} />
                   <InfoRow label="Primary Phone" value={employee.phone} />
-                  <InfoRow label="Secondary Phone" value={employee.phoneSecondary} />
-                  <InfoRow label="Joining Date" value={employee.joiningDate ? new Date(employee.joiningDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : null} />
+                  <InfoRow label="Secondary Phone" value={employee.phoneSecondary || employee.phone_secondary} />
+                  <InfoRow label="Date of Birth" value={(employee.dateOfBirth || employee.date_of_birth) ? new Date(employee.dateOfBirth || employee.date_of_birth).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : null} />
+                  <InfoRow label="Blood Group" value={employee.bloodGroup || employee.blood_group} />
+                  <InfoRow label="Joining Date" value={(employee.joiningDate || employee.joining_date) ? new Date(employee.joiningDate || employee.joining_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : null} />
 
                   <InfoRow label="Role" value={employee.role?.toUpperCase()} color="var(--primary)" />
                   <div>
                     <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Status</div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontWeight: 700, fontSize: 14, color: employee.isActive ? '#10B981' : '#EF4444' }}>
-                      <span style={{ width: 8, height: 8, borderRadius: '50%', background: employee.isActive ? '#10B981' : '#EF4444', display: 'inline-block' }} />
-                      {employee.isActive ? 'Active' : 'Inactive'}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontWeight: 700, fontSize: 14, color: (employee.isActive !== undefined ? employee.isActive : employee.is_active) ? '#10B981' : '#EF4444' }}>
+                      <span style={{ width: 8, height: 8, borderRadius: '50%', background: (employee.isActive !== undefined ? employee.isActive : employee.is_active) ? '#10B981' : '#EF4444', display: 'inline-block' }} />
+                      {(employee.isActive !== undefined ? employee.isActive : employee.is_active) ? 'Active' : 'Inactive'}
                     </div>
                   </div>
                 </div>
@@ -677,517 +651,248 @@ const EmployeeProfileView = () => {
             )}
           </Panel>
 
-          {/* Leave Summary — dynamic from real leave types */}
-          <Panel>
-            <PanelTitle icon={Calendar}>Leave Summary</PanelTitle>
-
-            {/* Total taken banner */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--primary-light)', padding: '14px 18px', borderRadius: 12, border: '1px dashed var(--primary)', marginBottom: 16 }}>
-              <div>
-                <div style={{ fontSize: 12, color: 'var(--primary)', fontWeight: 700, textTransform: 'uppercase' }}>Total Leave Taken</div>
-                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>From approved requests</div>
-              </div>
-              <div style={{ fontSize: 26, fontWeight: 900, color: 'var(--primary)' }}>
-                {leaves.filter(l => l.status === 'approved').reduce((s, l) => s + parseFloat(l.numberOfDays || l.number_of_days || 0), 0)}
-                <span style={{ fontSize: 13, fontWeight: 700 }}> Days</span>
-              </div>
+          {/* Leave Summary */}
+          {/* Total taken banner */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            background: '#FAF5FF',
+            padding: '16px 20px',
+            borderRadius: 16,
+            border: '1.5px dashed #C084FC',
+            marginBottom: 10
+          }}>
+            <div>
+              <div style={{ fontSize: 12, color: '#7C3AED', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total Leave Taken</div>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>From approved requests</div>
             </div>
+            <div style={{ fontSize: 32, fontWeight: 900, color: '#7C3AED', display: 'flex', alignItems: 'baseline', gap: 4 }}>
+              {leaves.filter(l => l.status === 'approved').reduce((s, l) => s + parseFloat(l.numberOfDays || l.number_of_days || 0), 0)}
+              <span style={{ fontSize: 14, fontWeight: 700 }}>Days</span>
+            </div>
+          </div>
 
-            {/* Per leave-type breakdown */}
-            {leaveTypes.length === 0 ? (
-              <div style={{ color: 'var(--text-muted)', fontSize: 13, textAlign: 'center', padding: '16px 0' }}>No leave types configured.</div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {leaveTypes.map(lt => {
-                  // sum days taken for this leave type from approved requests
-                  const taken = leaves
-                    .filter(l => l.status === 'approved' && (
-                      l.leaveTypeId === lt.id ||
-                      l.leave_type_id === lt.id ||
-                      l.leaveType === lt.name ||
-                      l.leave_type === lt.name
-                    ))
-                    .reduce((s, l) => s + parseFloat(l.numberOfDays || l.number_of_days || 0), 0);
-                  const total = parseFloat(lt.defaultDays || lt.default_days || 0);
-                  const remaining = Math.max(total - taken, 0);
-                  const pct = total > 0 ? Math.min((taken / total) * 100, 100) : 0;
-                  const color = lt.color || 'var(--primary)';
+          {/* Per leave-type breakdown */}
+          {leaveTypes.length === 0 ? (
+            <div style={{ color: 'var(--text-muted)', fontSize: 13, textAlign: 'center', padding: '16px 0' }}>No leave types configured.</div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 8 }}>
+              {leaveTypes.map(lt => {
+                const taken = leaves
+                  .filter(l => l.status === 'approved' && (
+                    l.leaveTypeId === lt.id ||
+                    l.leave_type_id === lt.id ||
+                    l.leaveType === lt.name ||
+                    l.leave_type === lt.name
+                  ))
+                  .reduce((s, l) => s + parseFloat(l.numberOfDays || l.number_of_days || 0), 0);
+                const total = parseFloat(lt.defaultDays || lt.default_days || 0);
+                const remaining = Math.max(total - taken, 0);
+                const pct = total > 0 ? Math.min((taken / total) * 100, 100) : 0;
+                const color = lt.color || 'var(--primary)';
 
-                  return (
-                    <div key={lt.id} style={{ background: 'var(--bg-light)', border: '1px solid var(--border-light)', borderRadius: 12, padding: '12px 14px' }}>
-                      {/* Header row */}
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <div style={{ width: 10, height: 10, borderRadius: '50%', background: color, flexShrink: 0 }} />
-                          <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--text-primary)' }}>{lt.name}</div>
-                          <span style={{ fontSize: 10, fontFamily: 'monospace', color: 'var(--text-muted)', background: 'var(--bg-card)', padding: '1px 6px', borderRadius: 4, border: '1px solid var(--border-light)' }}>{lt.code}</span>
-                        </div>
-                        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                          <div style={{ textAlign: 'center' }}>
-                            <div style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)' }}>Taken</div>
-                            <div style={{ fontSize: 15, fontWeight: 800, color: taken > 0 ? color : 'var(--text-muted)' }}>{taken}<span style={{ fontSize: 10 }}>d</span></div>
-                          </div>
-                          <div style={{ width: 1, height: 28, background: 'var(--border-light)' }} />
-                          <div style={{ textAlign: 'center' }}>
-                            <div style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)' }}>Left</div>
-                            <div style={{ fontSize: 15, fontWeight: 800, color: remaining > 0 ? '#10B981' : '#EF4444' }}>{remaining}<span style={{ fontSize: 10 }}>d</span></div>
-                          </div>
-                          <div style={{ width: 1, height: 28, background: 'var(--border-light)' }} />
-                          <div style={{ textAlign: 'center' }}>
-                            <div style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)' }}>Total</div>
-                            <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--text-primary)' }}>{total}<span style={{ fontSize: 10 }}>d</span></div>
+                return (
+                  <div key={lt.id} style={{
+                    background: '#FFFFFF',
+                    border: '1px solid #F1F5F9',
+                    borderRadius: 16,
+                    padding: '20px 24px',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.02), 0 1px 2px rgba(0,0,0,0.04)'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, gap: 12 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 }}>
+                        <div style={{ width: 8, height: 8, borderRadius: '50%', background: color, flexShrink: 0 }} />
+                        <div style={{ fontWeight: 800, fontSize: 15, color: '#1E293B', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{lt.name}</div>
+                        <span style={{ fontSize: 10, color: '#94A3B8', background: '#F1F5F9', padding: '2px 6px', borderRadius: 4, fontWeight: 700, flexShrink: 0 }}>{lt.code}</span>
+                      </div>
+                      <div style={{ display: 'flex', gap: 14, alignItems: 'center', flexShrink: 0 }}>
+                        <div style={{ textAlign: 'center' }}>
+                          <div style={{ fontSize: 9, fontWeight: 800, textTransform: 'uppercase', color: '#94A3B8', letterSpacing: '0.05em', marginBottom: 2 }}>Taken</div>
+                          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center' }}>
+                            <span style={{ fontSize: 16, fontWeight: 900, color: taken > 0 ? color : '#94A3B8' }}>{taken}</span>
+                            <span style={{ fontSize: 11, fontWeight: 700, color: '#94A3B8', marginLeft: 1 }}>d</span>
                           </div>
                         </div>
-                      </div>
-                      {/* Progress bar */}
-                      <div style={{ height: 5, background: 'var(--bg-card)', borderRadius: 3, overflow: 'hidden', border: '1px solid var(--border-light)' }}>
-                        <div style={{ width: `${pct}%`, height: '100%', background: color, borderRadius: 3, transition: 'width 0.8s ease' }} />
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
-                        <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>{lt.isPaid ? '✓ Paid' : 'Unpaid'}</span>
-                        <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>{pct.toFixed(0)}% used</span>
+                        <div style={{ width: 1, height: 22, background: '#E2E8F0' }} />
+                        <div style={{ textAlign: 'center' }}>
+                          <div style={{ fontSize: 9, fontWeight: 800, textTransform: 'uppercase', color: '#94A3B8', letterSpacing: '0.05em', marginBottom: 2 }}>Left</div>
+                          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center' }}>
+                            <span style={{ fontSize: 16, fontWeight: 900, color: remaining > 0 ? '#10B981' : '#EF4444' }}>{remaining}</span>
+                            <span style={{ fontSize: 11, fontWeight: 700, color: '#94A3B8', marginLeft: 1 }}>d</span>
+                          </div>
+                        </div>
+                        <div style={{ width: 1, height: 22, background: '#E2E8F0' }} />
+                        <div style={{ textAlign: 'center' }}>
+                          <div style={{ fontSize: 9, fontWeight: 800, textTransform: 'uppercase', color: '#94A3B8', letterSpacing: '0.05em', marginBottom: 2 }}>Total</div>
+                          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center' }}>
+                            <span style={{ fontSize: 16, fontWeight: 900, color: '#1E293B' }}>{total}</span>
+                            <span style={{ fontSize: 11, fontWeight: 700, color: '#94A3B8', marginLeft: 1 }}>d</span>
+                          </div>
+                        </div>
                       </div>
                     </div>
-                  );
-                })}
-              </div>
-            )}
-          </Panel>
+                    <div style={{ height: 6, background: '#F1F5F9', borderRadius: 9999, overflow: 'hidden' }}>
+                      <div style={{ width: `${pct}%`, height: '100%', background: color, borderRadius: 9999, transition: 'width 0.8s ease' }} />
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8 }}>
+                      <span style={{ fontSize: 11, color: '#94A3B8', fontWeight: 600 }}>{lt.isPaid ? '✓ Paid' : 'Unpaid'}</span>
+                      <span style={{ fontSize: 11, color: '#94A3B8', fontWeight: 600 }}>{pct.toFixed(0)}% used</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
         </div>
 
         {/* ══════════ RIGHT COLUMN — Profile Card ══════════ */}
         <div style={{ width: 292, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 20, position: 'sticky', top: 96, alignSelf: 'flex-start' }}>
 
-          {/* Profile Photo Card */}
-          <div style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-light)', boxShadow: 'var(--shadow-md)', overflow: 'hidden' }}>
-            {/* Cover banner — shows uploaded photo or gradient, with Edit Cover button */}
-            {(() => {
-              const displayCover = isEditing ? form?.coverPhoto : employee.coverPhoto;
-              return (
-                <div style={{
-                  height: 110,
-                  background: displayCover
-                    ? `url(${displayCover}) center/cover no-repeat`
-                    : 'linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%)',
-                  position: 'relative',
-                  overflow: 'hidden',
-                }}>
-                  {!displayCover && (
-                    <div style={{ position: 'absolute', inset: 0, opacity: 0.12, backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '22px 22px' }} />
-                  )}
-                  {/* Always-visible Edit Cover button */}
-                  <label
-                    title="Change Cover Photo"
-                    style={{
-                      position: 'absolute', bottom: 8, right: 8,
-                      background: 'rgba(0,0,0,0.45)',
-                      backdropFilter: 'blur(6px)',
-                      color: 'white',
-                      padding: '5px 11px',
-                      borderRadius: 8,
-                      display: 'flex', alignItems: 'center', gap: 5,
-                      cursor: 'pointer',
-                      fontSize: 11, fontWeight: 700,
-                      border: '1px solid rgba(255,255,255,0.25)',
-                      transition: 'background 0.2s',
-                      userSelect: 'none',
-                    }}
-                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,0,0,0.65)'}
-                    onMouseLeave={e => e.currentTarget.style.background = 'rgba(0,0,0,0.45)'}
-                  >
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                    </svg>
-                    Edit Cover
-                    <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleCoverChange} />
-                  </label>
-                </div>
-              );
-            })()}
+          {/* Employee ID Badge - Redesigned to match mockup */}
+          <div style={{ background: 'var(--bg-card)', borderRadius: 16, border: '1px solid var(--border-light)', boxShadow: '0 10px 25px rgba(99, 102, 241, 0.05)', overflow: 'hidden', textAlign: 'center', position: 'relative', borderBottom: '6px solid var(--primary)' }}>
+            
+            <div style={{ padding: '24px 20px' }}>
+              {/* Edit Button */}
+              {!isEditing && (
+                <button
+                  onClick={() => setIsEditing(true)}
+                  style={{
+                    position: 'absolute', top: 16, right: 16,
+                    background: 'transparent',
+                    border: 'none',
+                    color: 'var(--primary)',
+                    cursor: 'pointer',
+                    padding: 4,
+                    transition: 'opacity 0.2s'
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.opacity = 0.7}
+                  onMouseLeave={e => e.currentTarget.style.opacity = 1}
+                  title="Edit Profile"
+                >
+                  <Edit size={18} strokeWidth={2.5} />
+                </button>
+              )}
 
-            <div style={{ padding: '0 20px 22px', textAlign: 'center' }}>
               {/* Avatar */}
-              <div style={{ position: 'relative', display: 'inline-block', marginTop: -50 }}>
+              <div style={{ position: 'relative', display: 'inline-block', marginBottom: 16, marginTop: 8 }}>
                 {displayAvatar ? (
                   <img src={displayAvatar} alt={displayName}
-                    style={{ width: 100, height: 100, borderRadius: '50%', objectFit: 'cover', border: '5px solid var(--bg-card)', display: 'block', boxShadow: 'var(--shadow-md)' }} />
+                    style={{ width: 110, height: 110, borderRadius: '50%', objectFit: 'cover', border: '3px solid var(--primary)', padding: 3, display: 'block' }} />
                 ) : (
-                  <div style={{ width: 100, height: 100, borderRadius: '50%', background: 'linear-gradient(135deg, var(--primary), var(--secondary))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2.5rem', fontWeight: 800, color: 'white', border: '5px solid var(--bg-card)', boxShadow: 'var(--shadow-md)' }}>
+                  <div style={{ width: 110, height: 110, borderRadius: '50%', background: 'linear-gradient(135deg, var(--primary), var(--secondary))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2.5rem', fontWeight: 800, color: 'white', border: '3px solid var(--primary)', padding: 3 }}>
                     {initials(displayName)}
                   </div>
                 )}
-                {/* Active dot */}
-                <div style={{ position: 'absolute', bottom: 7, right: 7, background: employee.isActive ? '#10B981' : '#EF4444', width: 16, height: 16, borderRadius: '50%', border: '3px solid var(--bg-card)' }} />
-                {/* Upload button */}
-                <label style={{ position: 'absolute', bottom: 0, right: -6, background: 'var(--primary)', color: 'white', width: 32, height: 32, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: '3px solid var(--bg-card)', fontSize: 18, fontWeight: 700, transition: 'transform 0.2s', boxShadow: 'var(--shadow-sm)' }}
+                
+                <label style={{ position: 'absolute', bottom: 0, right: 0, background: 'var(--primary)', color: 'white', width: 28, height: 28, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: '2px solid var(--bg-card)', fontSize: 16, fontWeight: 700, transition: 'transform 0.2s' }}
                   onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.1)'}
                   onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
                   title="Upload Photo">
                   +
-                  <input type="file" accept="image/*" style={{ display: 'none' }} onChange={async (e) => {
-                    handleAvatarChange(e);
-                    if (!isEditing && e.target.files[0]) {
-                      const file = e.target.files[0];
-                      if (file.size > 2 * 1024 * 1024) return;
-                      const reader = new FileReader();
-                      reader.onloadend = async () => {
-                        try {
-                          await api.put(`/users/${id}/profile`, { ...form, avatar: reader.result });
-                          setEmployee(prev => ({ ...prev, avatar: reader.result }));
-                          toast.success('Photo updated!');
-                        } catch { toast.error('Failed to save photo'); }
-                      };
-                      reader.readAsDataURL(file);
-                    }
-                  }} />
+                  <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleAvatarChange} />
                 </label>
               </div>
 
-              <div style={{ marginTop: 12 }}>
-                <div style={{ fontSize: 17, fontWeight: 800, color: 'var(--text-primary)' }}>{employee.name}</div>
-                <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 3 }}>{employee.email}</div>
-                <div style={{ display: 'flex', gap: 6, justifyContent: 'center', marginTop: 10, flexWrap: 'wrap' }}>
-                  <span className="badge badge-present" style={{ textTransform: 'uppercase' }}>{employee.role}</span>
-                  {employee.employeeId && <span className="badge badge-pending">{employee.employeeId}</span>}
+              {/* Name and Role */}
+              <h3 style={{ margin: '0 0 6px', fontSize: 20, fontWeight: 900, color: '#1E293B', letterSpacing: '-0.5px' }}>{employee.name}</h3>
+              <div style={{ margin: '0 0 24px', color: 'var(--primary)', fontSize: 13, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                {employee.position || employee.role || 'Employee'}
+              </div>
+
+              {/* Info Box */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16, background: '#F8FAFC', borderRadius: 16, padding: '20px', border: '1px solid #F1F5F9', textAlign: 'left' }}>
+                
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: 13, color: '#64748B', fontWeight: 700 }}>Employee ID</span>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      className="form-control"
+                      style={{ fontSize: 13, padding: '4px 8px', width: '60%', height: '30px', borderRadius: '6px' }}
+                      value={form.employeeId}
+                      onChange={e => setForm({ ...form, employeeId: e.target.value })}
+                    />
+                  ) : (
+                    <span style={{ fontSize: 13, color: 'var(--primary)', fontWeight: 800 }}>{employee.employeeId || 'N/A'}</span>
+                  )}
                 </div>
+                
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: 13, color: '#64748B', fontWeight: 700 }}>Department</span>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      className="form-control"
+                      style={{ fontSize: 13, padding: '4px 8px', width: '60%', height: '30px', borderRadius: '6px' }}
+                      value={form.department}
+                      onChange={e => setForm({ ...form, department: e.target.value })}
+                    />
+                  ) : (
+                    <span style={{ fontSize: 13, color: '#0F172A', fontWeight: 800 }}>{employee.department || 'N/A'}</span>
+                  )}
+                </div>
+                
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: 13, color: '#64748B', fontWeight: 700 }}>Date of Join</span>
+                  {isEditing ? (
+                    <input
+                      type="date"
+                      className="form-control"
+                      style={{ fontSize: 13, padding: '4px 8px', width: '60%', height: '30px', borderRadius: '6px' }}
+                      value={form.joiningDate}
+                      onChange={e => setForm({ ...form, joiningDate: e.target.value })}
+                    />
+                  ) : (
+                    <span style={{ fontSize: 13, color: '#0F172A', fontWeight: 800 }}>{employee.joiningDate ? new Date(employee.joiningDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A'}</span>
+                  )}
+                </div>
+                
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: 13, color: '#64748B', fontWeight: 700 }}>Date of Birth</span>
+                  {isEditing ? (
+                    <input
+                      type="date"
+                      className="form-control"
+                      style={{ fontSize: 13, padding: '4px 8px', width: '60%', height: '30px', borderRadius: '6px' }}
+                      value={form.dateOfBirth}
+                      onChange={e => setForm({ ...form, dateOfBirth: e.target.value })}
+                    />
+                  ) : (
+                    <span style={{ fontSize: 13, color: '#0F172A', fontWeight: 800 }}>{employee.dateOfBirth ? new Date(employee.dateOfBirth).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A'}</span>
+                  )}
+                </div>
+                
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: 13, color: '#64748B', fontWeight: 700 }}>Blood Group</span>
+                  {isEditing ? (
+                    <select
+                      className="form-control"
+                      style={{ fontSize: 13, padding: '4px 12px', width: '60%', height: '30px', borderRadius: '6px' }}
+                      value={form.bloodGroup}
+                      onChange={e => setForm({ ...form, bloodGroup: e.target.value })}
+                    >
+                      <option value="">Select Blood Group</option>
+                      <option value="A+">A+</option>
+                      <option value="A-">A-</option>
+                      <option value="B+">B+</option>
+                      <option value="B-">B-</option>
+                      <option value="AB+">AB+</option>
+                      <option value="AB-">AB-</option>
+                      <option value="O+">O+</option>
+                      <option value="O-">O-</option>
+                    </select>
+                  ) : (
+                    <span style={{ fontSize: 13, color: employee.bloodGroup ? '#EF4444' : '#0F172A', fontWeight: 800, background: employee.bloodGroup ? 'rgba(239, 68, 68, 0.1)' : 'transparent', padding: employee.bloodGroup ? '4px 10px' : '0', borderRadius: 6 }}>
+                      {employee.bloodGroup || 'N/A'}
+                    </span>
+                  )}
+                </div>
+
               </div>
             </div>
           </div>
-
-          {/* Employee ID Card */}
-          <Panel style={{ padding: 0, overflow: 'hidden', border: '1px solid var(--border-light)', borderRadius: 16, background: 'var(--bg-card)', position: 'relative' }}>
-
-
-            {/* Card Body */}
-            <div style={{ padding: '24px 20px', textAlign: 'center', background: 'linear-gradient(180deg, rgba(99, 102, 241, 0.03) 0%, rgba(255, 255, 255, 0) 100%)' }}>
-              {/* Edit Button (top-right) */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', marginBottom: 10, paddingInline: 2 }}>
-                {!isEditing && (
-                  <button
-                    onClick={() => setIsEditing(true)}
-                    style={{
-                      border: 'none',
-                      background: 'transparent',
-                      color: 'var(--primary)',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      padding: 4,
-                      borderRadius: 6,
-                      transition: 'background 0.2s',
-                    }}
-                    onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-light)'}
-                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                    title="Edit Profile Details"
-                  >
-                    <Edit size={14} />
-                  </button>
-                )}
-              </div>
-
-              {/* Circular Photo Frame (1:1 ratio) - ID Card only photo */}
-              <div style={{ position: 'relative', display: 'inline-block', width: 90, height: 90, marginBottom: 12 }}>
-                {(employee.idCardPhoto || form?.idCardPhoto) ? (
-                  <img
-                    src={isEditing ? (form?.idCardPhoto || employee.idCardPhoto) : employee.idCardPhoto}
-                    alt={employee.name}
-                    style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover', border: '3px solid var(--primary)', padding: 2, background: 'white', display: 'block', boxShadow: 'var(--shadow-sm)' }}
-                  />
-                ) : employee.avatar ? (
-                  <img src={employee.avatar} alt={employee.name} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover', border: '3px solid var(--primary)', padding: 2, background: 'white', display: 'block', boxShadow: 'var(--shadow-sm)' }} />
-                ) : (
-                  <div style={{ width: '100%', height: '100%', borderRadius: '50%', background: 'linear-gradient(135deg, var(--primary), var(--secondary))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', fontWeight: 800, color: 'white', border: '3px solid var(--primary)', padding: 2, boxSizing: 'border-box' }}>
-                    {initials(employee.name)}
-                  </div>
-                )}
-                {/* ID Card Photo Upload (only changes ID card photo) */}
-                <label style={{
-                  position: 'absolute', bottom: 0, right: 0,
-                  background: 'var(--primary)', color: 'white',
-                  width: 26, height: 26, borderRadius: '50%',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  cursor: 'pointer', border: '2px solid var(--bg-card)',
-                  fontSize: 15, fontWeight: 700, transition: 'transform 0.2s',
-                  boxShadow: 'var(--shadow-sm)',
-                  userSelect: 'none'
-                }}
-                  onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.1)'}
-                  onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
-                  title="Change ID Card Photo">
-                  +
-                  <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleIdCardPhotoChange} />
-                </label>
-              </div>
-
-              {/* Basic Info */}
-              {isEditing ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 16 }}>
-                  <input
-                    name="name"
-                    className="form-control"
-                    value={form?.name || ''}
-                    onChange={handleChange}
-                    placeholder="Full Name"
-                    style={{
-                      fontSize: 14,
-                      fontWeight: 800,
-                      textAlign: 'center',
-                      height: 32,
-                      padding: '4px 8px',
-                      borderRadius: 8,
-                      border: '1.5px solid var(--primary)',
-                      background: 'var(--bg-card)',
-                      boxShadow: 'var(--shadow-sm)'
-                    }}
-                  />
-                  <input
-                    name="position"
-                    className="form-control"
-                    value={form?.position || ''}
-                    onChange={handleChange}
-                    placeholder="Position / Title"
-                    style={{
-                      fontSize: 11,
-                      fontWeight: 700,
-                      color: 'var(--primary)',
-                      textTransform: 'uppercase',
-                      textAlign: 'center',
-                      height: 28,
-                      padding: '4px 8px',
-                      borderRadius: 6,
-                      border: '1.5px solid var(--primary)',
-                      background: 'var(--bg-card)',
-                      boxShadow: 'var(--shadow-sm)'
-                    }}
-                  />
-                </div>
-              ) : (
-                <>
-                  <h4 style={{ margin: '0 0 4px', fontSize: 16, fontWeight: 800, color: 'var(--text-primary)' }}>{employee.name}</h4>
-                  <p style={{ margin: '0 0 16px', fontSize: 12, fontWeight: 700, color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{employee.position || 'Employee'}</p>
-                </>
-              )}
-
-              {/* Details Grid */}
-              <div style={{
-                position: 'relative',
-                display: 'grid',
-                gridTemplateColumns: '1fr',
-                gap: '8px',
-                textAlign: 'left',
-                background: 'var(--bg-light)',
-                borderRadius: 12,
-                border: '1px solid var(--border-light)',
-                padding: '14px',
-                marginBottom: 6
-              }}>
-                {[
-                  {
-                    label: 'Employee ID',
-                    value: employee.employeeId || 'N/A',
-                    highlight: true,
-                    editControl: (
-                      <input
-                        name="employeeId"
-                        value={form?.employeeId || ''}
-                        onChange={handleChange}
-                        className="form-control"
-                        placeholder="Employee ID"
-                        style={{
-                          fontSize: 11,
-                          fontWeight: 750,
-                          color: 'var(--primary)',
-                          padding: '2px 6px',
-                          height: '24px',
-                          borderRadius: 6,
-                          border: '1.5px solid var(--primary)',
-                          textAlign: 'right',
-                          width: '130px',
-                          background: 'var(--bg-card)',
-                          boxShadow: 'var(--shadow-sm)'
-                        }}
-                      />
-                    )
-                  },
-                  {
-                    label: 'Department',
-                    value: employee.department || 'N/A',
-                    editControl: (
-                      <input
-                        name="department"
-                        value={form?.department || ''}
-                        onChange={handleChange}
-                        className="form-control"
-                        placeholder="Department"
-                        style={{
-                          fontSize: 11,
-                          fontWeight: 750,
-                          color: 'var(--text-primary)',
-                          padding: '2px 6px',
-                          height: '24px',
-                          borderRadius: 6,
-                          border: '1px solid var(--border)',
-                          textAlign: 'right',
-                          width: '130px',
-                          background: 'var(--bg-card)'
-                        }}
-                      />
-                    )
-                  },
-                  {
-                    label: 'Date of Join',
-                    value: employee.joiningDate ? new Date(employee.joiningDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A',
-                    editControl: (
-                      <input
-                        type="date"
-                        name="joiningDate"
-                        value={form?.joiningDate || ''}
-                        onChange={handleChange}
-                        className="form-control"
-                        style={{
-                          fontSize: 10.5,
-                          fontWeight: 750,
-                          color: 'var(--text-primary)',
-                          padding: '2px 6px',
-                          height: '24px',
-                          borderRadius: 6,
-                          border: '1px solid var(--border)',
-                          textAlign: 'right',
-                          width: '130px',
-                          background: 'var(--bg-card)'
-                        }}
-                      />
-                    )
-                  },
-                  {
-                    label: 'Date of Birth',
-                    value: employee.dateOfBirth ? new Date(employee.dateOfBirth).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A',
-                    editControl: (
-                      <input
-                        type="date"
-                        name="dateOfBirth"
-                        value={form?.dateOfBirth || ''}
-                        onChange={handleChange}
-                        className="form-control"
-                        style={{
-                          fontSize: 10.5,
-                          fontWeight: 750,
-                          color: 'var(--text-primary)',
-                          padding: '2px 6px',
-                          height: '24px',
-                          borderRadius: 6,
-                          border: '1px solid var(--border)',
-                          textAlign: 'right',
-                          width: '130px',
-                          background: 'var(--bg-card)'
-                        }}
-                      />
-                    )
-                  },
-                  {
-                    label: 'Blood Group',
-                    value: employee.bloodGroup ? employee.bloodGroup : 'N/A',
-                    isBlood: true,
-                    editControl: (
-                      <select
-                        name="bloodGroup"
-                        value={form?.bloodGroup || ''}
-                        onChange={handleChange}
-                        className="form-control"
-                        style={{
-                          fontSize: 11,
-                          fontWeight: 750,
-                          color: form?.bloodGroup ? '#EF4444' : 'var(--text-primary)',
-                          padding: '2px 20px 2px 6px',
-                          height: '24px',
-                          borderRadius: 6,
-                          border: '1px solid var(--border)',
-                          textAlign: 'right',
-                          width: '130px',
-                          background: 'var(--bg-card)'
-                        }}
-                      >
-                        <option value="">N/A</option>
-                        {['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map(bg => (
-                          <option key={bg} value={bg}>{bg}</option>
-                        ))}
-                      </select>
-                    )
-                  },
-                ].map(({ label, value, highlight, isBlood, editControl }) => (
-                  <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 11.5, minHeight: '28px' }}>
-                    <span style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>{label}</span>
-                    {isEditing ? (
-                      editControl
-                    ) : (
-                      <span style={{
-                        fontWeight: 750,
-                        color: highlight ? 'var(--primary)' : isBlood && value !== 'N/A' ? '#EF4444' : 'var(--text-primary)',
-                        background: isBlood && value !== 'N/A' ? 'rgba(239, 68, 68, 0.08)' : 'transparent',
-                        padding: isBlood && value !== 'N/A' ? '2px 8px' : '0',
-                        borderRadius: 4
-                      }}>{value}</span>
-                    )}
-                  </div>
-                ))}
-              </div>
-
-              {/* Inline Save/Cancel buttons when editing */}
-              {isEditing && (
-                <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 12, marginBottom: 6 }}>
-                  <button
-                    onClick={() => setIsEditing(false)}
-                    disabled={saving}
-                    style={{
-                      padding: '6px 12px',
-                      borderRadius: 8,
-                      border: '1px solid var(--border)',
-                      background: 'var(--bg-light)',
-                      color: 'var(--text-secondary)',
-                      fontSize: 11,
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 4,
-                      transition: 'all 0.2s'
-                    }}
-                    onMouseEnter={e => e.currentTarget.style.background = 'var(--border-light)'}
-                    onMouseLeave={e => e.currentTarget.style.background = 'var(--bg-light)'}
-                  >
-                    <X size={12} /> Cancel
-                  </button>
-                  <button
-                    onClick={handleSave}
-                    disabled={saving}
-                    style={{
-                      padding: '6px 12px',
-                      borderRadius: 8,
-                      border: 'none',
-                      background: 'var(--primary)',
-                      color: 'white',
-                      fontSize: 11,
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 4,
-                      boxShadow: 'var(--shadow-sm)',
-                      transition: 'all 0.2s'
-                    }}
-                    onMouseEnter={e => e.currentTarget.style.background = 'var(--primary-dark)'}
-                    onMouseLeave={e => e.currentTarget.style.background = 'var(--primary)'}
-                  >
-                    <Save size={12} /> {saving ? 'Saving…' : 'Save'}
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* ID Card Footer Ribbon */}
-            <div style={{ height: 6, background: 'linear-gradient(90deg, var(--primary) 0%, var(--secondary) 100%)' }} />
-          </Panel>
 
           {/* Quick Stats */}
           <Panel>

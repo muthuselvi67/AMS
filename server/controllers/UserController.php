@@ -36,6 +36,8 @@ class UserController {
                     $this->changePassword();
                 } else if ($this->subId === 'profile') {
                     $this->updateProfile($this->id);
+                } else if ($this->subId === 'status') {
+                    $this->updateStatus($this->id);
                 } else {
                     $this->updateUser($this->id);
                 }
@@ -57,7 +59,8 @@ class UserController {
                          salary_pf as salaryPf, salary_tax as salaryTax, avatar, cover_photo as coverPhoto,
                          grad_degree as gradDegree, grad_institution as gradInstitution, grad_year as gradYear, grad_gpa as gradGpa,
                          portfolio_website as portfolioWebsite, portfolio_github as portfolioGithub, portfolio_linkedin as portfolioLinkedin, portfolio_resume as portfolioResume,
-                         blood_group as bloodGroup, date_of_birth as dateOfBirth, id_card_photo as idCardPhoto,
+                         blood_group as bloodGroup, date_of_birth as dateOfBirth, id_card_photo as idCardPhoto, about,
+                         chat_name as chatName, chat_about as chatAbout, chat_avatar as chatAvatar,
                          bank_name as bankName, account_name as accountName, account_number as accountNumber, ifsc_code as ifscCode, branch_name as branchName,
                          leave_balance_annual as leaveBalanceAnnual, leave_balance_sick as leaveBalanceSick, leave_balance_casual as leaveBalanceCasual,
                          leave_balance_maternity as leaveBalanceMaternity, leave_balance_paternity as leaveBalancePaternity, leave_balance_unpaid as leaveBalanceUnpaid
@@ -240,6 +243,27 @@ class UserController {
         }
     }
 
+    private function updateStatus($id) {
+        $data = json_decode(file_get_contents("php://input"), true);
+        if (!$id || !isset($data['isActive'])) Response::json(false, "Invalid request", null, 400);
+
+        if (!in_array($this->user['role'], ['admin', 'hr'])) {
+            Response::json(false, "Unauthorized", null, 403);
+        }
+
+        $query = "UPDATE users SET is_active = :is_active WHERE id = :id";
+        $stmt = $this->db->prepare($query);
+        $isActive = $data['isActive'] ? 1 : 0;
+        $stmt->bindParam(':is_active', $isActive);
+        $stmt->bindParam(':id', $id);
+
+        if($stmt->execute()) {
+            Response::json(true, "User status updated successfully", null, 200);
+        } else {
+            Response::json(false, "Failed to update user status", null, 500);
+        }
+    }
+
     private function updateProfile($id) {
         $data = json_decode(file_get_contents("php://input"), true);
         if (!$id || !$data) Response::json(false, "Invalid request", null, 400);
@@ -251,12 +275,14 @@ class UserController {
 
         $query = "UPDATE users SET 
                     name = :name, 
+                    about = :about,
                     phone = :phone,
                     phone_secondary = :phone_secondary,
                     department = :department, 
                     position = :position,
-                    avatar = :avatar,
-                    cover_photo = :cover_photo,
+                    avatar      = COALESCE(:avatar,      avatar),
+                    cover_photo = COALESCE(:cover_photo, cover_photo),
+                    id_card_photo = COALESCE(:id_card_photo, id_card_photo),
                     grad_degree = :grad_degree,
                     grad_institution = :grad_institution,
                     grad_year = :grad_year,
@@ -269,7 +295,6 @@ class UserController {
                     date_of_birth = :date_of_birth,
                     employee_id = :employee_id,
                     joining_date = :joining_date,
-                    id_card_photo = :id_card_photo,
                     bank_name = :bank_name,
                     account_name = :account_name,
                     account_number = :account_number,
@@ -278,15 +303,22 @@ class UserController {
                   WHERE id = :id";
         $stmt = $this->db->prepare($query);
         $stmt->bindParam(':name', $data['name']);
+        $about = $data['about'] ?? 'Available';
+        $stmt->bindParam(':about', $about);
         $stmt->bindParam(':phone', $data['phone']);
         $phoneSec = $data['phoneSecondary'] ?? '';
         $stmt->bindParam(':phone_secondary', $phoneSec);
         $stmt->bindParam(':department', $data['department']);
         $stmt->bindParam(':position', $data['position']);
-        $avatar = $data['avatar'] ?? null;
-        $stmt->bindParam(':avatar', $avatar);
-        $coverPhoto = $data['coverPhoto'] ?? null;
-        $stmt->bindParam(':cover_photo', $coverPhoto);
+
+        // ── Image columns: save as JPEG file, store path in DB ─
+        $avatar      = $this->saveImageFile($data['avatar']     ?? null, 'uploads/avatars/');
+        $coverPhoto  = $this->saveImageFile($data['coverPhoto'] ?? null, 'uploads/cover_photos/');
+        $idCardPhoto = $this->saveImageFile($data['idCardPhoto']?? null, 'uploads/id_cards/');
+
+        $stmt->bindParam(':avatar',        $avatar);
+        $stmt->bindParam(':cover_photo',   $coverPhoto);
+        $stmt->bindParam(':id_card_photo', $idCardPhoto);
         
         $gradDegree = $data['gradDegree'] ?? '';
         $stmt->bindParam(':grad_degree', $gradDegree);
@@ -315,8 +347,6 @@ class UserController {
         $stmt->bindParam(':employee_id', $employeeId);
         $joiningDate = !empty($data['joiningDate']) ? $data['joiningDate'] : null;
         $stmt->bindParam(':joining_date', $joiningDate);
-        $idCardPhoto = $data['idCardPhoto'] ?? null;
-        $stmt->bindParam(':id_card_photo', $idCardPhoto);
 
         $bankName = $data['bankName'] ?? '';
         $stmt->bindParam(':bank_name', $bankName);
@@ -347,12 +377,78 @@ class UserController {
             $s->execute();
             $updatedUser = $s->fetch(PDO::FETCH_ASSOC);
             
-            // We shouldn't necessarily override salary array in frontend user object,
-            // but just passing back the flat info is enough for the profile page
             Response::json(true, "Profile updated successfully", ["user" => $updatedUser], 200);
         } else {
             Response::json(false, "Failed to update profile", null, 500);
         }
+    }
+
+    /**
+     * Save a base64 image as a JPEG file on disk.
+     * Returns the saved relative URL path, or preserves existing path,
+     * or null if nothing was sent.
+     *
+     * Filename: Image_YYYYMMDD_HHmmss.jpeg
+     *
+     * @param  string|null $value      base64 data URI or existing file path
+     * @param  string      $subFolder  e.g. 'uploads/avatars/'
+     * @return string|null             Relative URL path  e.g. /uploads/avatars/Image_20260630_124344.jpeg
+     */
+    private function saveImageFile(?string $value, string $subFolder): ?string {
+        // Nothing sent — return null (DB column stays as-is via COALESCE not needed, just null)
+        if (empty($value)) return null;
+
+        // Already a saved file path (not base64) — keep it unchanged
+        if (!str_starts_with($value, 'data:image/')) {
+            return $value;
+        }
+
+        // ── Strip the data URI prefix ──────────────────────────
+        // Handles: data:image/jpeg, data:image/png, data:image/gif, data:image/webp
+        $commaPos = strpos($value, ',');
+        if ($commaPos === false) return null;
+
+        $base64    = substr($value, $commaPos + 1);
+        $base64    = str_replace(' ', '+', $base64);  // fix URL-encoded spaces
+        $imageData = base64_decode($base64, true);
+        if ($imageData === false) return null;
+
+        // ── Convert any format → JPEG via GD ───────────────────
+        if (extension_loaded('gd')) {
+            $gd = @imagecreatefromstring($imageData);
+            if ($gd !== false) {
+                $w      = imagesx($gd);
+                $h      = imagesy($gd);
+                // Fill white background (for PNG/GIF transparency)
+                $canvas = imagecreatetruecolor($w, $h);
+                $white  = imagecolorallocate($canvas, 255, 255, 255);
+                imagefill($canvas, 0, 0, $white);
+                imagecopy($canvas, $gd, 0, 0, 0, 0, $w, $h);
+                imagedestroy($gd);
+                ob_start();
+                imagejpeg($canvas, null, 90);  // 90% quality
+                $imageData = ob_get_clean();
+                imagedestroy($canvas);
+            }
+        }
+
+        // ── Create upload folder ───────────────────────────────
+        $absFolder = __DIR__ . '/../' . ltrim($subFolder, '/');
+        if (!is_dir($absFolder)) {
+            mkdir($absFolder, 0755, true);
+        }
+
+        // ── Filename: Image_YYYYMMDD_HHmmss.jpeg ───────────────
+        $fileName = 'Image_' . date('Ymd_His') . '.jpeg';
+        $filePath = $absFolder . $fileName;
+
+        // ── Write to disk ──────────────────────────────────────
+        if (file_put_contents($filePath, $imageData) === false) {
+            return null;  // write failed — don't save broken path
+        }
+
+        // Return relative URL (served by frontend via getServerUrl)
+        return '/' . ltrim($subFolder, '/') . $fileName;
     }
 
     private function deleteUser($id) {

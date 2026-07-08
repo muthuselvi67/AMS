@@ -31,6 +31,7 @@ require_once __DIR__ . '/controllers/HelpdeskController.php';
 require_once __DIR__ . '/controllers/WFHController.php';
 require_once __DIR__ . '/controllers/TaskHandoverController.php';
 require_once __DIR__ . '/controllers/ChatController.php';
+require_once __DIR__ . '/controllers/MeetingController.php';
 
 
 
@@ -60,6 +61,14 @@ $authHeader = $headers['Authorization'] ?? $headers['authorization'] ?? '';
 
 if (preg_match('/Bearer\s(\S+)/', $authHeader, $matches)) {
     $user = JWT::decode($matches[1]);
+    if ($user && isset($user['id'])) {
+        try {
+            $updateStmt = $db->prepare("UPDATE users SET last_active = NOW() WHERE id = :id");
+            $updateStmt->execute([':id' => $user['id']]);
+        } catch (PDOException $e) {
+            // Ignore if column doesn't exist
+        }
+    }
 }
 
 // Special case: Auth/Login (doesn't need token)
@@ -153,6 +162,10 @@ switch ($resource) {
         break;
     case 'task-handovers':
         $controller = new TaskHandoverController($db, $method, $id, $user);
+        $controller->processRequest();
+        break;
+    case 'meetings':
+        $controller = new MeetingController($db, $method, $id, $user);
         $controller->processRequest();
         break;
     case 'chat':

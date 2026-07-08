@@ -4,32 +4,32 @@ import { Home, Clock, FileText, AlertCircle, CheckCircle, ChevronDown, ChevronUp
 const rules = [
     {
         icon: Clock,
-        color: '#9B7CFD',
-        bg: '#F5F3FF',
+        color: 'var(--primary)',
+        bg: 'var(--primary-light)',
         title: 'Regular Check-In Updates',
         description: 'Employees working from home must provide a status update every 2 hours during work hours.',
         detail: 'Updates should briefly describe what you are working on. This ensures team coordination and accountability during remote work days.'
     },
     {
         icon: FileText,
-        color: '#10B981',
-        bg: '#E6FDF4',
+        color: 'var(--success)',
+        bg: 'var(--success-light)',
         title: 'Final Update Window',
         description: 'The final end-of-day report must be submitted between 5:30 PM and 6:00 PM.',
         detail: 'The final update window is strictly between 17:30 and 18:00. Updates submitted outside this window do not count as the final EOD report.'
     },
     {
         icon: CheckCircle,
-        color: '#3B82F6',
-        bg: '#EFF6FF',
+        color: 'var(--secondary)',
+        bg: 'var(--secondary-light)',
         title: 'Mandatory EOD Report',
         description: 'Submission of the end-of-day report is mandatory for all WFH days.',
         detail: 'The EOD report should summarise the work completed during the day, any blockers encountered, and tasks planned for the next day.'
     },
     {
         icon: AlertCircle,
-        color: '#EF4444',
-        bg: '#FEF2F2',
+        color: 'var(--danger)',
+        bg: 'var(--danger-light)',
         title: 'Leave Consequence',
         description: 'If the EOD report is not submitted, the WFH day will be marked as leave.',
         detail: 'Failure to submit the mandatory EOD report by 6:00 PM will automatically trigger an absence/leave mark for that day in the attendance records.'
@@ -183,9 +183,9 @@ const WFHPolicy = () => {
                             <div style={{
                                 position: 'absolute', left: -32, top: 4,
                                 width: 22, height: 22, borderRadius: '50%',
-                                background: item.highlight ? '#EF4444' : '#9B7CFD',
+                                background: item.highlight ? 'var(--danger)' : 'var(--primary)',
                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                boxShadow: item.highlight ? '0 0 0 4px #FEF2F2' : '0 0 0 4px #F5F3FF',
+                                boxShadow: item.highlight ? '0 0 0 4px var(--danger-light)' : '0 0 0 4px var(--primary-light)',
                                 zIndex: 1
                             }}>
                                 {item.highlight
@@ -194,19 +194,19 @@ const WFHPolicy = () => {
                                 }
                             </div>
                             <div style={{
-                                background: item.highlight ? '#FEF2F2' : 'var(--bg-light)',
+                                background: item.highlight ? 'var(--danger-light)' : 'var(--bg-light)',
                                 borderRadius: 12, padding: '12px 18px',
-                                border: item.highlight ? '1.5px solid #FCA5A5' : '1px solid var(--border-light)',
+                                border: item.highlight ? '1.5px solid var(--danger)' : '1px solid var(--border-light)',
                             }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
                                     <span style={{
                                         fontSize: 11, fontWeight: 800, letterSpacing: '0.06em',
-                                        color: item.highlight ? '#EF4444' : '#9B7CFD',
+                                        color: item.highlight ? 'white' : 'var(--primary)',
                                         textTransform: 'uppercase',
-                                        background: item.highlight ? '#FEE2E2' : '#EDE9FE',
+                                        background: item.highlight ? 'var(--danger)' : 'var(--primary-light)',
                                         padding: '2px 10px', borderRadius: 8
                                     }}>{item.time}</span>
-                                    <span style={{ fontWeight: 700, fontSize: 14, color: item.highlight ? '#EF4444' : 'var(--text-primary)' }}>
+                                    <span style={{ fontWeight: 700, fontSize: 14, color: item.highlight ? 'var(--danger)' : 'var(--text-primary)' }}>
                                         {item.label}
                                     </span>
                                 </div>
@@ -265,21 +265,21 @@ const WFHPolicy = () => {
 
             {/* Policy Footer Notice */}
             <div style={{
-                background: 'linear-gradient(135deg, #FFFBEB, #FEF3C7)',
-                border: '1px solid #FDE68A', borderRadius: 16, padding: '20px 24px',
+                background: 'var(--warning-light)',
+                border: '1px solid var(--warning)', borderRadius: 16, padding: '20px 24px',
                 display: 'flex', gap: 14, alignItems: 'flex-start'
             }}>
                 <div style={{
-                    width: 40, height: 40, background: '#F59E0B20', borderRadius: 10,
+                    width: 40, height: 40, background: 'var(--bg-white)', borderRadius: 10,
                     display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
                 }}>
-                    <AlertCircle size={20} color="#F59E0B" />
+                    <AlertCircle size={20} color="var(--warning)" />
                 </div>
                 <div>
-                    <div style={{ fontWeight: 700, fontSize: 14, color: '#92400E', marginBottom: 6 }}>
+                    <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--warning)', marginBottom: 6 }}>
                         Policy Effective Date & Updates
                     </div>
-                    <p style={{ margin: 0, fontSize: 13, color: '#78350F', lineHeight: 1.7 }}>
+                    <p style={{ margin: 0, fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.7 }}>
                         This policy is effective immediately and applies to all employees who opt for Work From Home.
                         The HR department reserves the right to update this policy. Any changes will be communicated
                         via official announcements. For queries, please contact HR through the HelpDesk module.

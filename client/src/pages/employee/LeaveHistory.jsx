@@ -110,7 +110,7 @@ const LeaveHistory = () => {
         <div className="fade-in">
             <div className="page-header"><h1>Leave History</h1><p>Track all your leave requests and their status</p></div>
 
-            <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
+            <div className="filter-chips">
                 {filters.map(f => {
                     const meta = STATUS_META[f] || { label: f, color: 'var(--text-secondary)', rgba: 'rgba(0,0,0,0.05)' };
                     const isActive = filter === f;
