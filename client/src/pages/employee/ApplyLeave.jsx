@@ -267,29 +267,8 @@ const ApplyLeave = () => {
                             <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                                 <FileText size={18} color="#7c3aed" /> Select Leave Type
                             </span>
-                            <button
-                                type="button"
-                                onClick={() => setShowAddTypeModal(true)}
-                                style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: 6,
-                                    background: '#FAF5FF',
-                                    color: '#7c3aed',
-                                    border: '1.5px dashed #c084fc',
-                                    borderRadius: 10,
-                                    padding: '6px 12px',
-                                    fontSize: 12,
-                                    fontWeight: 700,
-                                    cursor: 'pointer',
-                                    transition: 'all 0.2s'
-                                }}
-                                onMouseEnter={e => { e.currentTarget.style.background = '#F3E8FF'; }}
-                                onMouseLeave={e => { e.currentTarget.style.background = '#FAF5FF'; }}
-                            >
-                                <Plus size={14} /> Add
-                            </button>
                         </div>
+
                         <div className="al-leave-types">
                             {leaveTypes.map(lt => (
                                 <div

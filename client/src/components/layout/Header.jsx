@@ -31,6 +31,8 @@ const pageTitles = {
     '/admin/pm-appraisals': { title: 'PM Appraisals', sub: 'Manage project manager appraisals' },
     '/employee/dashboard': { title: 'My Dashboard', sub: 'Your leave and attendance overview' },
     '/employee/profile': { title: 'My Profile', sub: 'View and update your information' },
+    '/admin/profile': { title: 'My Profile', sub: 'View and update your information' },
+    '/hr/profile': { title: 'My Profile', sub: 'View and update your information' },
     '/employee/apply-leave': { title: 'Apply Leave', sub: 'Submit a new leave request' },
     '/employee/leave-history': { title: 'Leave History', sub: 'Track your leave requests' },
     '/employee/assigned-tasks': { title: 'Assigned Task Status', sub: 'Manage handovers' },
@@ -249,7 +251,7 @@ const Header = ({ onMenuClick }) => {
                 <button className="header-btn" onClick={onMenuClick} title="Toggle sidebar">
                     <Menu size={20} />
                 </button>
-                <div className="header-title" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <div className="header-title">
                     {!location.pathname.endsWith('/dashboard') && (
                         <button className="header-btn" onClick={() => navigate(-1)} title="Go back">
                             <ChevronLeft size={20} />
@@ -257,15 +259,15 @@ const Header = ({ onMenuClick }) => {
                     )}
                     {pageInfo.title !== 'Learnlike' && (
                         <>
-                            <div style={{ minWidth: 0 }}>
+                            <div className="header-title-text" style={{ minWidth: 0 }}>
                                 <h2>{pageInfo.title}</h2>
                                 <p>{pageInfo.sub}</p>
                             </div>
                         </>
                     )}
                 </div>
-                <div className="header-actions" style={{ marginLeft: 'auto' }}>
-                    <div style={{ position: 'relative' }}>
+                <div className="header-actions">
+                    <div style={{ position: 'relative', marginRight: unread > 0 ? '6px' : '0' }}>
                         <button className="header-btn" onClick={() => goNotifications()} title="Notifications"
                             style={{ position: 'relative' }}
                         >
@@ -309,65 +311,25 @@ const Header = ({ onMenuClick }) => {
                         {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
                     </button>
 
-                    {/* Dropdown Container */}
-                    <div style={{ position: 'relative' }}>
-                        <button className="user-avatar-btn" onClick={() => setDropdownOpen(!dropdownOpen)} style={{ border: 'none', background: 'transparent', cursor: 'pointer' }}>
-                            {user?.avatar ? (
-                                <img src={getServerUrl(user.avatar)} alt="Avatar" className="user-avatar" style={{ objectFit: 'cover' }} />
-                            ) : (
-                                <div className="user-avatar">{initials}</div>
-                            )}
-                            <div className="user-info">
-                                <div className="user-name">{user?.name}</div>
-                                <div className="user-role">{user?.role}</div>
-                            </div>
-                        </button>
-
-                        {/* Dropdown Overlay / Click-outside Listener */}
-                        {dropdownOpen && (
-                            <div
-                                style={{ position: 'fixed', inset: 0, zIndex: 998 }}
-                                onClick={() => setDropdownOpen(false)}
-                            />
+                    {/* Profile Button — navigates directly to My Profile */}
+                    <button
+                        className="user-avatar-btn"
+                        onClick={() => navigate(`/${user?.role?.toLowerCase()}/profile`)}
+                        style={{ border: 'none', background: 'transparent', cursor: 'pointer' }}
+                        title="My Profile"
+                    >
+                        {user?.avatar ? (
+                            <img src={getServerUrl(user.avatar)} alt="Avatar" className="user-avatar" style={{ objectFit: 'cover' }} />
+                        ) : (
+                            <div className="user-avatar">{initials}</div>
                         )}
+                        <div className="user-info">
+                            <div className="user-name">{user?.name}</div>
+                            <div className="user-role">{user?.role}</div>
+                        </div>
+                    </button>
 
-                        {/* Premium Dropdown Menu */}
-                        {dropdownOpen && (
-                            <div className="profile-dropdown-menu">
-                                <div className="dropdown-user-header">
-                                    {user?.avatar ? (
-                                        <img src={getServerUrl(user.avatar)} alt="Avatar" className="dropdown-user-avatar" style={{ objectFit: 'cover' }} />
-                                    ) : (
-                                        <div className="dropdown-user-avatar">{initials}</div>
-                                    )}
-                                    <div className="dropdown-user-details">
-                                        <div className="dropdown-user-name">{user?.name}</div>
-                                        <div className="dropdown-user-role">{user?.role}</div>
-                                    </div>
-                                </div>
-                                <div className="dropdown-divider" />
-                                <button className="dropdown-item" onClick={() => { setProfileOpen(true); setDropdownOpen(false); }}>
-                                    <User size={16} />
-                                    <span>My Profile</span>
-                                </button>
-                                <button className="dropdown-item" onClick={() => { setSettingsOpen(true); setDropdownOpen(false); }}>
-                                    <Settings size={16} />
-                                    <span>Settings</span>
-                                </button>
-                                <button className="dropdown-item" onClick={() => { setPasswordOpen(true); setDropdownOpen(false); }}>
-                                    <Lock size={16} />
-                                    <span>Change Password</span>
-                                </button>
-                                <div className="dropdown-divider" />
-                                <button className="dropdown-item logout-item" onClick={handleLogout}>
-                                    <LogOut size={16} />
-                                    <span>Logout</span>
-                                </button>
-                            </div>
-                        )}
-                    </div>
-
-                    <button className="header-btn" onClick={handleLogout} title="Logout" style={{ color: '#EF4444' }}>
+                    <button className="header-btn header-logout-btn" onClick={handleLogout} title="Logout" style={{ color: '#EF4444' }}>
                         <LogOut size={20} />
                     </button>
                 </div>

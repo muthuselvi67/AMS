@@ -60,6 +60,11 @@ class AttendanceController {
             return;
         }
 
+        if ($this->requestMethod === 'PUT' && $this->subId === 'timesheet') {
+            $this->updateTimesheet();
+            return;
+        }
+
         switch ($this->requestMethod) {
             case 'GET':
                 $this->getAttendance();
@@ -174,7 +179,12 @@ class AttendanceController {
                 ] : null,
                 'totalHours'   => $record['total_hours'] ?? 0,
                 'status'       => $record['status'],
-                'workFromHome' => (bool)($record['work_from_home'] ?? false)
+                'workFromHome' => (bool)($record['work_from_home'] ?? false),
+                'break_minutes' => $record['break_minutes'] ?? 0,
+                'overtime_hours' => $record['overtime_hours'] ?? 0,
+                'task_done' => $record['task_done'],
+                'remarks' => $record['remarks'],
+                'timesheet_status' => $record['timesheet_status'] ?? 'pending'
             ];
 
             Response::json(true, "Today attendance fetched", ['attendance' => $attendance], 200);
@@ -260,6 +270,11 @@ class AttendanceController {
                 'longitude' => $r['check_out_longitude'] ? (float)$r['check_out_longitude'] : null
             ];
             $r['totalHours'] = (float)$r['total_hours'];
+            $r['break_minutes'] = (int)($r['break_minutes'] ?? 0);
+            $r['overtime_hours'] = (float)($r['overtime_hours'] ?? 0);
+            $r['task_done'] = $r['task_done'];
+            $r['remarks'] = $r['remarks'];
+            $r['timesheet_status'] = $r['timesheet_status'] ?? 'pending';
 
             // For WFH records, attach update counts for HR/Admin
             if ($isAdminOrHR && $r['work_from_home']) {
@@ -511,6 +526,84 @@ class AttendanceController {
         if (!$photo) return null;
         if (strpos($photo, 'data:image') === 0 || strpos($photo, 'http') === 0) return $photo;
         return '/' . ltrim($photo, '/');
+    }
+    private function updateTimesheet() {
+        if (!$this->id) {
+            Response::json(false, "Attendance ID required", null, 400);
+            return;
+        }
+
+        $data = json_decode(file_get_contents("php://input"), true);
+        if (!$data) {
+            Response::json(false, "Invalid input", null, 400);
+            return;
+        }
+
+        // Only employees can update their own task info, but HR/Admin can update timesheet_status (approve/reject)
+        $isAdminOrHR = in_array($this->user['role'], ['admin', 'hr']);
+        
+        $checkQuery = "SELECT employee_id, total_hours FROM attendances WHERE id = :id LIMIT 1";
+        $checkStmt = $this->db->prepare($checkQuery);
+        $checkStmt->execute([':id' => $this->id]);
+        $record = $checkStmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$record) {
+            Response::json(false, "Record not found", null, 404);
+            return;
+        }
+
+        if (!$isAdminOrHR && $record['employee_id'] != $this->user['id']) {
+            Response::json(false, "Unauthorized", null, 403);
+            return;
+        }
+
+        $fields = [];
+        $params = [':id' => $this->id];
+
+        if (isset($data['break_minutes'])) {
+            $fields[] = "break_minutes = :break_minutes";
+            $params[':break_minutes'] = $data['break_minutes'];
+        }
+        if (isset($data['task_done'])) {
+            $fields[] = "task_done = :task_done";
+            $params[':task_done'] = $data['task_done'];
+        }
+        if (isset($data['remarks'])) {
+            $fields[] = "remarks = :remarks";
+            $params[':remarks'] = $data['remarks'];
+        }
+        if (isset($data['timesheet_status']) && $isAdminOrHR) {
+            $fields[] = "timesheet_status = :timesheet_status";
+            $params[':timesheet_status'] = $data['timesheet_status'];
+        }
+
+        // Automatic Overtime Calculation: if updating break or task, recalculate overtime based on total_hours
+        $stdHours = 9.0;
+        $totalHours = (float)($record['total_hours'] ?? 0);
+        $breakHrs = isset($data['break_minutes']) ? ((int)$data['break_minutes'] / 60) : 0;
+        
+        // Let's assume total_hours already includes breaks if the user hasn't paused the timer, 
+        // but if they explicitly specify break_minutes, we might deduct it. 
+        // For now, overtime is simply (total_hours) - stdHours.
+        $overtime = $totalHours - $stdHours;
+        if ($overtime < 0) $overtime = 0;
+        
+        $fields[] = "overtime_hours = :overtime_hours";
+        $params[':overtime_hours'] = $overtime;
+
+        if (empty($fields)) {
+            Response::json(false, "No fields to update", null, 400);
+            return;
+        }
+
+        $query = "UPDATE attendances SET " . implode(", ", $fields) . " WHERE id = :id";
+        $stmt = $this->db->prepare($query);
+
+        if ($stmt->execute($params)) {
+            Response::json(true, "Timesheet updated successfully", null, 200);
+        } else {
+            Response::json(false, "Failed to update timesheet", null, 500);
+        }
     }
 }
 ?>

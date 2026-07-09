@@ -35,6 +35,7 @@ const adminLinks = [
         section: 'Attendance & Time', links: [
             { to: '/admin/my-attendance', icon: Clock, label: 'My Attendance' },
             { to: '/admin/attendance', icon: ClipboardCheck, label: 'Team Attendance' },
+            { to: '/admin/regularization', icon: Clock, label: 'Regularization' },
             { to: '/admin/holidays', icon: Gift, label: 'Holidays' },
         ]
     },
@@ -86,6 +87,7 @@ const hrLinks = [
         section: 'Attendance & Time', links: [
             { to: '/hr/my-attendance', icon: Clock, label: 'My Attendance' },
             { to: '/hr/attendance', icon: ClipboardCheck, label: 'Team Attendance' },
+            { to: '/hr/regularization', icon: Clock, label: 'Regularization' },
             { to: '/hr/holidays', icon: Gift, label: 'Holidays' },
         ]
     },
@@ -139,6 +141,7 @@ const employeeLinks = [
     {
         section: 'Attendance', links: [
             { to: '/employee/attendance', icon: Clock, label: 'Attendance' },
+            { to: '/employee/regularization', icon: Clock, label: 'Regularization' },
             { to: '/employee/holidays', icon: CalendarDays, label: 'Holiday Calendar' },
         ]
     },
@@ -182,7 +185,6 @@ const pmLinks = [
     },
     {
         section: 'Tracking', links: [
-            { to: '/pm/timesheets', icon: Clock3, label: 'Timesheets' },
             { to: '/pm/risks', icon: ShieldAlert, label: 'Risks' },
             { to: '/pm/issues', icon: Bug, label: 'Issue Tracker' },
         ]

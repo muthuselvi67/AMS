@@ -364,10 +364,10 @@ const Profile = () => {
       </div>
 
       {/* ── Main 2-column layout ── */}
-      <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+      <div className="profile-main-layout">
 
         {/* ══════════ LEFT COLUMN ══════════ */}
-        <div style={{ flex: '1 1 560px', display: 'flex', flexDirection: 'column', gap: 20 }}>
+        <div className="profile-left-col">
 
           {/* Name / Info Panel */}
           <Panel>
@@ -378,7 +378,7 @@ const Profile = () => {
                   <input name="name" className="form-control" value={form.name} onChange={handleChange}
                     style={{ fontSize: 17, fontWeight: 700 }} />
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div className="profile-form-grid-2">
                   <div>
                     <label className="form-label">Department</label>
                     <input name="department" className="form-control" value={form.department} onChange={handleChange} placeholder="e.g. Engineering" />
@@ -388,7 +388,7 @@ const Profile = () => {
                     <input name="position" className="form-control" value={form.position} onChange={handleChange} placeholder="e.g. Senior Developer" />
                   </div>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div className="profile-form-grid-2">
                   <div>
                     <label className="form-label">Primary Phone</label>
                     <input name="phone" className="form-control" value={form.phone} onChange={handleChange} />
@@ -398,7 +398,7 @@ const Profile = () => {
                     <input name="phoneSecondary" className="form-control" value={form.phoneSecondary} onChange={handleChange} />
                   </div>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div className="profile-form-grid-2">
                   <div>
                     <label className="form-label">Date of Birth</label>
                     <input name="dateOfBirth" type="date" className="form-control" value={form.dateOfBirth} onChange={handleChange} />
@@ -413,7 +413,7 @@ const Profile = () => {
                     </select>
                   </div>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div className="profile-form-grid-2">
                   <div>
                     <label className="form-label">Employee ID</label>
                     <input name="employeeId" className="form-control" value={form.employeeId} onChange={handleChange} placeholder="e.g. LL-100000" />
@@ -487,7 +487,7 @@ const Profile = () => {
               </div>
             ) : (
               (!employee.gradDegree && !employee.gradInstitution) ? (
-                <div style={{ color: 'var(--text-muted)', fontSize: 14, fontStyle: 'italic', textAlign: 'center', padding: '20px 0' }}>
+                <div className="profile-empty-text">
                   No educational details added yet. Click Edit Profile to add.
                 </div>
               ) : (
@@ -618,7 +618,7 @@ const Profile = () => {
             </div>
 
             {/* Stats row */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 20 }}>
+            <div className="profile-stats-grid">
               {[
                 { label: 'Attendance Rate', value: `${attendanceRate}%`, color: '#10B981', icon: TrendingUp },
                 { label: 'Avg Hours/Day', value: `${avgHours}h`, color: 'var(--primary)', icon: Clock },
@@ -776,7 +776,7 @@ const Profile = () => {
                 <label className="form-label required">Current Password</label>
                 <input name="currentPassword" type="password" className="form-control" value={pwForm.currentPassword} onChange={handlePwChange} required />
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+              <div className="profile-form-grid-2" style={{ marginBottom: 16 }}>
                 <div className="form-group">
                   <label className="form-label required">New Password</label>
                   <input name="newPassword" type="password" className="form-control" value={pwForm.newPassword} onChange={handlePwChange} required />
@@ -799,7 +799,7 @@ const Profile = () => {
         </div>
 
         {/* ══════════ RIGHT COLUMN ══════════ */}
-        <div style={{ width: 292, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 20, position: 'sticky', top: 96, alignSelf: 'flex-start' }}>
+        <div className="profile-right-col" style={{ position: 'sticky', top: 96, alignSelf: 'flex-start' }}>
 
           {/* Employee ID Badge - Redesigned to match mockup */}
           <div style={{ background: 'var(--bg-card)', borderRadius: 16, border: '1px solid var(--border-light)', boxShadow: '0 10px 25px rgba(99, 102, 241, 0.05)', overflow: 'hidden', textAlign: 'center', position: 'relative', borderBottom: '6px solid var(--primary)' }}>

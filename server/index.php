@@ -18,6 +18,7 @@ require_once __DIR__ . '/controllers/AuthController.php';
 require_once __DIR__ . '/controllers/UserController.php';
 require_once __DIR__ . '/controllers/LeaveController.php';
 require_once __DIR__ . '/controllers/AttendanceController.php';
+require_once __DIR__ . '/controllers/RegularizationController.php';
 require_once __DIR__ . '/controllers/HolidayController.php';
 require_once __DIR__ . '/controllers/AppraisalController.php';
 require_once __DIR__ . '/controllers/PMAppraisalController.php';
@@ -93,6 +94,10 @@ switch ($resource) {
 
     case 'attendance':
         $controller = new AttendanceController($db, $method, $id, $user, $subId);
+        $controller->processRequest();
+        break;
+    case 'regularization':
+        $controller = new RegularizationController($db, $method, $id, $user);
         $controller->processRequest();
         break;
     case 'holidays':
@@ -172,10 +177,11 @@ switch ($resource) {
         $controller = new ChatController($db, $method, $id, $user, $subId);
         $controller->processRequest();
         break;
-
-
-
-
+    case 'regularization':
+        require_once __DIR__ . '/controllers/RegularizationController.php';
+        $controller = new RegularizationController($db, $method, $id, $user, $subId);
+        $controller->processRequest();
+        break;
     default:
         Response::json(false, "Invalid endpoint: " . ($resource ?? 'root'), ["uri" => $uri], 404);
         break;

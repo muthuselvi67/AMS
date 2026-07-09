@@ -57,6 +57,13 @@ export default function DashboardCalendar() {
         : role === 'hr' ? '/hr/leave-requests'
             : '/employee/apply-leave';
 
+    /* ── calendar math ── */
+    const yr = currentDate.getFullYear();
+    const mo = currentDate.getMonth();
+    const firstDay = new Date(yr, mo, 1).getDay();
+    const totalDays = new Date(yr, mo + 1, 0).getDate();
+    const prevTotal = new Date(yr, mo, 0).getDate();
+
     /* ── role-aware button labels ── */
     const attendanceLabel = role === 'employee' ? 'Add Attendance' : 'My Attendance';
     const leaveLabel = role === 'employee' ? 'Apply Leave' : 'View Requests';
@@ -83,7 +90,41 @@ export default function DashboardCalendar() {
         if (!cell.current) return;
         const dateStr = `${yr}-${String(mo + 1).padStart(2, '0')}-${String(cell.day).padStart(2, '0')}`;
         const date = new Date(yr, mo, cell.day);
-        setModal({ date, dateStr });
+        
+        const events = [];
+        if (cell.isSunday) {
+            events.push({ type: 'sunday', title: 'Weekly Off (Sunday)', icon: '🏡', color: '#DB2777' });
+        }
+        
+        const dateObj = new Date(yr, mo, cell.day);
+        if (dateObj.getDay() === 6) {
+            const satIndex = Math.ceil(cell.day / 7);
+            const hasHoliday = cell.holidays && cell.holidays.length > 0;
+            if (!hasHoliday) {
+                const isWorking = satIndex === 2 || satIndex === 4;
+                if (isWorking) {
+                    events.push({ type: 'working_sat', title: `Working Saturday (${satIndex === 2 ? '2nd' : '4th'})`, icon: '💼', color: '#15803D' });
+                } else {
+                    events.push({ type: 'off_sat', title: `Office Leave (${satIndex === 1 ? '1st' : satIndex === 3 ? '3rd' : '5th'} Saturday)`, icon: '🏡', color: '#DB2777' });
+                }
+            }
+        }
+        
+        if (cell.holidays) {
+            cell.holidays.forEach(h => {
+                const isGovt = h.type === 'government' || h.type === 'national';
+                const icon = isGovt ? '🏛' : h.type === 'company' ? '🏢' : h.type === 'bank' ? '🏦' : '🎉';
+                events.push({ type: 'holiday', title: h.name, icon, color: typeColors[h.type] || '#1E3A8A' });
+            });
+        }
+        
+        if (cell.birthdays) {
+            cell.birthdays.forEach(emp => {
+                events.push({ type: 'birthday', title: `${emp.name}'s Birthday`, icon: '🎂', color: '#F59E0B' });
+            });
+        }
+
+        setModal({ date, dateStr, events });
         setDayLeaves([]);
         setLeaveLoading(true);
         api.get('/leaves', { params: { date: dateStr } })
@@ -93,19 +134,12 @@ export default function DashboardCalendar() {
             })
             .catch(console.error)
             .finally(() => setLeaveLoading(false));
-    }, []);   // yr/mo captured at call-site via closure — see usage below
+    }, [yr, mo]);
 
     /* ── navigation ── */
     const goPrev = () => setCurrentDate(d => new Date(d.getFullYear(), d.getMonth() - 1, 1));
     const goNext = () => setCurrentDate(d => new Date(d.getFullYear(), d.getMonth() + 1, 1));
     const goToday = () => setCurrentDate(new Date());
-
-    /* ── calendar math ── */
-    const yr = currentDate.getFullYear();
-    const mo = currentDate.getMonth();
-    const firstDay = new Date(yr, mo, 1).getDay();
-    const totalDays = new Date(yr, mo + 1, 0).getDate();
-    const prevTotal = new Date(yr, mo, 0).getDate();
 
     /* holidays this month keyed by day-of-month */
     const holidayMap = {};
@@ -384,7 +418,60 @@ export default function DashboardCalendar() {
 
     return (
         <>
-            <div style={{ background: 'var(--bg-white)', borderRadius: 12, border: '1px solid var(--border)', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
+            <style>{`
+                .calendar-grid-wrapper {
+                    width: 100%;
+                }
+                @media (max-width: 768px) {
+                    .calendar-header {
+                        flex-direction: column !important;
+                        align-items: flex-start !important;
+                        gap: 16px !important;
+                        padding: 16px !important;
+                    }
+                    .calendar-header-left {
+                        width: 100%;
+                        flex-wrap: wrap;
+                    }
+                    .calendar-month-title {
+                        font-size: 20px !important;
+                    }
+                    .calendar-header-right {
+                        width: 100%;
+                        justify-content: stretch !important;
+                    }
+                    .calendar-header-right button {
+                        flex: 1;
+                        justify-content: center;
+                    }
+                    .calendar-day-header {
+                        font-size: 10px !important;
+                        padding: 6px 0 !important;
+                    }
+                    .calendar-day-cell {
+                        min-height: 60px !important;
+                        padding: 3px !important;
+                        gap: 2px !important;
+                    }
+                    .calendar-pill {
+                        padding: 2px !important;
+                        justify-content: center !important;
+                        border-left: none !important;
+                    }
+                    .calendar-pill-text {
+                        display: none !important;
+                    }
+                    .calendar-pill-icon {
+                        margin: 0 !important;
+                        font-size: 12px;
+                    }
+                    .calendar-legend {
+                        padding: 10px !important;
+                        gap: 8px !important;
+                    }
+                }
+            `}</style>
+            <div className="calendar-container" style={{ background: 'var(--bg-white)', borderRadius: 12, border: '1px solid var(--border)', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
 
                 {/* ── Header ── */}
                 <div className="calendar-header" style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 24, padding: '20px 24px', borderBottom: '1px solid var(--border)', background: 'var(--bg-white)', borderRadius: '12px 12px 0 0' }}>
@@ -476,11 +563,11 @@ export default function DashboardCalendar() {
                 </div>
 
                 {/* ── Day-name column headers ── */}
-                <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
-                    <div style={{ minWidth: 0 }}>
+                <div className="calendar-grid-wrapper">
+                    <div>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', borderBottom: '1px solid var(--border)' }}>
                             {DAY_FULL.map((d, idx) => (
-                                <div key={d} style={dayHeaderStyle(idx)}>{d}</div>
+                                <div key={d} className="calendar-day-header" style={dayHeaderStyle(idx)}>{d}</div>
                             ))}
                         </div>
 
@@ -705,7 +792,7 @@ export default function DashboardCalendar() {
                             </div>
                             <div style={{ flex: 1, minWidth: 0 }}>
                                 <div style={{ fontSize: 17, fontWeight: 700, color: '#1A1A2E' }}>
-                                    Employees on Leave
+                                    Events & Leaves
                                 </div>
                                 <div style={{ fontSize: 13, color: '#6B7280', marginTop: 2 }}>
                                     {modalDateLabel}
@@ -736,29 +823,46 @@ export default function DashboardCalendar() {
 
                         {/* Modal Body */}
                         <div style={{ overflowY: 'auto', padding: '12px 24px 24px' }}>
+                            {modal?.events?.length > 0 && (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
+                                    <div style={{ fontSize: 12, color: '#6B7280', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 2 }}>
+                                        Events & Holidays
+                                    </div>
+                                    {modal.events.map((ev, i) => (
+                                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 10, background: '#FAFAFA', border: '1px solid #F0F0F0' }}>
+                                            <div style={{ width: 36, height: 36, borderRadius: '50%', background: ev.color + '15', color: ev.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>
+                                                {ev.icon}
+                                            </div>
+                                            <div style={{ fontWeight: 600, color: '#1A1A2E' }}>
+                                                {ev.title}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            <div style={{ fontSize: 12, color: '#6B7280', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 12 }}>
+                                Employees on Leave
+                            </div>
+
                             {leaveLoading ? (
-                                <div style={{ textAlign: 'center', padding: '40px 0', color: '#9CA3AF' }}>
+                                <div style={{ textAlign: 'center', padding: '20px 0', color: '#9CA3AF' }}>
                                     <div style={{
-                                        width: 32, height: 32, border: '3px solid #E5E7EB',
+                                        width: 24, height: 24, border: '3px solid #E5E7EB',
                                         borderTopColor: '#1A73E8', borderRadius: '50%',
                                         animation: 'spin 0.7s linear infinite',
-                                        margin: '0 auto 12px',
+                                        margin: '0 auto 8px',
                                     }} />
                                     Loading…
                                 </div>
                             ) : dayLeaves.length === 0 ? (
-                                <div style={{ textAlign: 'center', padding: '48px 0', color: '#9CA3AF' }}>
-                                    <Users size={48} style={{ margin: '0 auto 12px', display: 'block', opacity: 0.4 }} />
-                                    <div style={{ fontSize: 15, fontWeight: 600, color: '#6B7280' }}>No approved leaves</div>
-                                    <div style={{ fontSize: 13, marginTop: 4 }}>Everyone is at work on this day!</div>
+                                <div style={{ textAlign: 'center', padding: '24px 0', color: '#9CA3AF', background: '#F9FAFB', borderRadius: 10, border: '1px dashed #E5E7EB' }}>
+                                    <Users size={24} style={{ margin: '0 auto 8px', display: 'block', opacity: 0.4 }} />
+                                    <div style={{ fontSize: 14, fontWeight: 600, color: '#6B7280' }}>No leaves today</div>
+                                    <div style={{ fontSize: 12, marginTop: 2 }}>Everyone is at work!</div>
                                 </div>
                             ) : (
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 8 }}>
-                                    {/* Count pill */}
-                                    <div style={{ fontSize: 12, color: '#6B7280', fontWeight: 600, marginBottom: 2 }}>
-                                        {dayLeaves.length} employee{dayLeaves.length !== 1 ? 's' : ''} on leave
-                                    </div>
-
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                                     {dayLeaves.map((leave, i) => {
                                         const name = leave.employee_name || leave.employee?.name || 'Unknown';
                                         const days = leave.number_of_days || leave.numberOfDays || '?';

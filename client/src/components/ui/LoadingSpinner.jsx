@@ -1,22 +1,45 @@
 import React from 'react';
-import ringLoader from '../../assets/ring-loader.png';
 
 const styles = `
-@keyframes boltGlow {
-    0%,100% { filter: drop-shadow(0 0 10px rgba(0,180,255,0.55)) drop-shadow(0 0 24px rgba(0,100,255,0.35)); }
-    50%      { filter: drop-shadow(0 0 22px rgba(0,210,255,0.90)) drop-shadow(0 0 48px rgba(0,120,255,0.60)); }
-}
-@keyframes boltFloat {
-    0%,100% { transform: translateY(0px);  }
-    50%      { transform: translateY(-6px); }
-}
-@keyframes dotPulse {
-    0%,100% { opacity:1;   transform:scale(1);   box-shadow: 0 0 6px rgba(30,100,255,0.7);  }
-    50%      { opacity:0.4; transform:scale(0.65); box-shadow: 0 0 2px rgba(30,100,255,0.3);  }
-}
 @keyframes loaderFadeIn {
-    from { opacity:0; }
-    to   { opacity:1; }
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+.ios-spinner {
+    color: #8c8c8c;
+    display: inline-block;
+    position: relative;
+}
+.ios-spinner div {
+    transform-origin: 50% 50%;
+    animation: ios-spinner 1.2s linear infinite;
+}
+.ios-spinner div:after {
+    content: " ";
+    display: block;
+    position: absolute;
+    top: 0%;
+    left: 45.5%;
+    width: 9%;
+    height: 25%;
+    border-radius: 20%;
+    background: currentColor;
+}
+.ios-spinner div:nth-child(1) { transform: rotate(0deg); animation-delay: -1.1s; }
+.ios-spinner div:nth-child(2) { transform: rotate(30deg); animation-delay: -1s; }
+.ios-spinner div:nth-child(3) { transform: rotate(60deg); animation-delay: -0.9s; }
+.ios-spinner div:nth-child(4) { transform: rotate(90deg); animation-delay: -0.8s; }
+.ios-spinner div:nth-child(5) { transform: rotate(120deg); animation-delay: -0.7s; }
+.ios-spinner div:nth-child(6) { transform: rotate(150deg); animation-delay: -0.6s; }
+.ios-spinner div:nth-child(7) { transform: rotate(180deg); animation-delay: -0.5s; }
+.ios-spinner div:nth-child(8) { transform: rotate(210deg); animation-delay: -0.4s; }
+.ios-spinner div:nth-child(9) { transform: rotate(240deg); animation-delay: -0.3s; }
+.ios-spinner div:nth-child(10) { transform: rotate(270deg); animation-delay: -0.2s; }
+.ios-spinner div:nth-child(11) { transform: rotate(300deg); animation-delay: -0.1s; }
+.ios-spinner div:nth-child(12) { transform: rotate(330deg); animation-delay: 0s; }
+@keyframes ios-spinner {
+    0% { opacity: 1; }
+    100% { opacity: 0.15; }
 }
 `;
 
@@ -25,29 +48,23 @@ export const PageLoader = () => (
         position: 'fixed', inset: 0,
         display: 'flex', flexDirection: 'column',
         alignItems: 'center', justifyContent: 'center',
-        background: '#000000',
+        background: 'rgba(255, 255, 255, 0.9)',
         zIndex: 9999,
         animation: 'loaderFadeIn 0.25s ease',
     }}>
         <style>{styles}</style>
-        <img src={ringLoader} alt="Loading..." style={{ width: '100vw', height: '100vh', objectFit: 'cover' }} />
+        <div className="ios-spinner" style={{ width: 48, height: 48 }}>
+            {Array.from({ length: 12 }).map((_, i) => <div key={i} style={{ position: 'absolute', width: '100%', height: '100%' }} />)}
+        </div>
     </div>
 );
 
-/* ─── Small inline spinner for use inside cards/pages ─── */
-const LoadingSpinner = ({ size }) => (
+const LoadingSpinner = ({ size = 24 }) => (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%' }}>
-        <img 
-            src={ringLoader} 
-            alt="Loading..." 
-            style={{ 
-                maxWidth: size ? `${size * 2}px` : '100%', 
-                width: '100%', 
-                height: size ? 'auto' : '100%',
-                objectFit: 'cover',
-                filter: 'drop-shadow(0px 4px 6px rgba(0,0,0,0.1))'
-            }} 
-        />
+        <style>{styles}</style>
+        <div className="ios-spinner" style={{ width: size, height: size }}>
+            {Array.from({ length: 12 }).map((_, i) => <div key={i} style={{ position: 'absolute', width: '100%', height: '100%' }} />)}
+        </div>
     </div>
 );
 

@@ -18,6 +18,7 @@ const defaultForm = {
 const HREmployees = () => {
     const { user } = useAuth();
     const [employees, setEmployees] = useState([]);
+    const [allEmployees, setAllEmployees] = useState([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
     const [modal, setModal] = useState({ open: false, mode: 'create', user: null });
@@ -25,6 +26,7 @@ const HREmployees = () => {
     const [saving, setSaving] = useState(false);
     const [activeTab, setActiveTab] = useState('active');
     const [viewMode, setViewMode] = useState('employees');
+    const [fromDept, setFromDept] = useState(null);
     const navigate = useNavigate();
 
     const getDepartmentStats = () => {
@@ -42,6 +44,14 @@ const HREmployees = () => {
         return Object.values(stats);
     };
 
+    const fetchAllEmployees = async () => {
+        try {
+            const { data } = await api.get('/users');
+            const usersList = data.data || [];
+            setAllEmployees(usersList.filter(u => u.role === 'employee'));
+        } catch { /* silent */ }
+    };
+
     const fetchEmployees = async () => {
         setLoading(true);
         try {
@@ -52,6 +62,10 @@ const HREmployees = () => {
         } catch { toast.error('Failed to load employees'); }
         finally { setLoading(false); }
     };
+
+    useEffect(() => {
+        fetchAllEmployees();
+    }, []);
 
     useEffect(() => {
         const delayDebounce = setTimeout(() => {
@@ -95,6 +109,7 @@ const HREmployees = () => {
             }
             closeModal();
             fetchEmployees();
+            fetchAllEmployees();
         } catch (err) {
             toast.error(err.response?.data?.message || 'Operation failed');
         } finally { setSaving(false); }
@@ -110,17 +125,18 @@ const HREmployees = () => {
                 toast.success(`${emp.name} reactivated`);
             }
             fetchEmployees();
+            fetchAllEmployees();
         } catch { toast.error('Operation failed'); }
     };
 
     const initials = (name) => name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || '?';
 
-    const totalEmployees = employees.length;
-    const activeEmployees = employees.filter(e => e.isActive).length;
+    const totalEmployees = allEmployees.length;
+    const activeEmployees = allEmployees.filter(e => e.isActive).length;
     const inactiveEmployees = totalEmployees - activeEmployees;
     const activePercentage = totalEmployees > 0 ? ((activeEmployees / totalEmployees) * 100).toFixed(2) : 0;
     const inactivePercentage = totalEmployees > 0 ? ((inactiveEmployees / totalEmployees) * 100).toFixed(2) : 0;
-    const departmentsCount = new Set(employees.filter(e => e.department && e.isActive).map(e => e.department)).size;
+    const departmentsCount = new Set(allEmployees.filter(e => e.department && e.isActive).map(e => e.department)).size;
 
     return (
         <div className="fade-in">
@@ -214,6 +230,19 @@ const HREmployees = () => {
                             </div>
                             
                             <button className="btn btn-primary btn-sm" onClick={openCreate}><Plus size={14} /> Add Employee</button>
+                            {fromDept && (
+                                <button 
+                                    className="btn btn-secondary btn-sm"
+                                    onClick={() => {
+                                        setFromDept(null);
+                                        setSearch('');
+                                        setViewMode('departments');
+                                    }}
+                                    style={{ display: 'flex', alignItems: 'center', gap: '6px', marginLeft: 'auto' }}
+                                >
+                                    ← Back to Departments
+                                </button>
+                            )}
                         </div>
 
                         <div className="table-container">
@@ -231,7 +260,7 @@ const HREmployees = () => {
                                                 <tr key={i}>{Array(6).fill(0).map((_, j) => <td key={j}><div className="skeleton skeleton-text" style={{ width: j === 0 ? '160px' : '80px' }} /></td>)}</tr>
                                             ))
                                         ) : (
-                                            employees.filter(emp => activeTab === 'all' ? true : (activeTab === 'active' ? emp.isActive : !emp.isActive)).map(emp => (
+                                            employees.filter(emp => activeTab === 'all' ? true : (activeTab === 'active' ? emp.isActive : !emp.isActive)).sort((a, b) => (b.isActive ? 1 : 0) - (a.isActive ? 1 : 0)).map(emp => (
                                                 <tr key={emp.id} style={{ borderBottom: '1px dashed var(--border)' }}>
                                                     <td>
                                                         <div 
@@ -311,6 +340,7 @@ const HREmployees = () => {
                                                 <button 
                                                     className="btn btn-primary btn-sm"
                                                     onClick={() => {
+                                                        setFromDept(dept.name);
                                                         setViewMode('employees');
                                                         setActiveTab('all');
                                                         setSearch(dept.name);

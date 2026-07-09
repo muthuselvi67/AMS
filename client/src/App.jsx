@@ -25,12 +25,16 @@ const AdminNotifications = lazy(() => import('./pages/admin/Notifications'));
 const AdminAssets = lazy(() => import('./pages/admin/Assets'));
 const AdminAnnouncements = lazy(() => import('./pages/admin/Announcements'));
 const AdminMeetingSchedule = lazy(() => import('./pages/admin/MeetingSchedule'));
+const AdminRegularizationRequests = lazy(() => import('./pages/admin/RegularizationRequests'));
+const AdminTimesheets = lazy(() => import('./pages/admin/Timesheets'));
 // HR Pages
 const HRDashboard = lazy(() => import('./pages/hr/Dashboard'));
 const HREmployees = lazy(() => import('./pages/hr/Employees'));
 const HRLeaveRequests = lazy(() => import('./pages/hr/LeaveRequests'));
 const HRLeaveTypes = lazy(() => import('./pages/hr/LeaveTypes'));
 const HRAttendanceRecords = lazy(() => import('./pages/hr/AttendanceRecords'));
+const HRRegularizationRequests = lazy(() => import('./pages/hr/RegularizationRequests'));
+const HRTimesheets = lazy(() => import('./pages/hr/Timesheets'));
 const HRHolidays = lazy(() => import('./pages/hr/Holidays'));
 const HRReports = lazy(() => import('./pages/hr/Reports'));
 const HRPayroll = lazy(() => import('./pages/hr/PayrollDashboard'));
@@ -58,7 +62,9 @@ const BankingDashboard = lazy(() => import('./pages/banking/BankingDashboard'));
 const EmployeeDashboard = lazy(() => import('./pages/employee/Dashboard'));
 const ApplyLeave = lazy(() => import('./pages/employee/ApplyLeave'));
 const LeaveHistory = lazy(() => import('./pages/employee/LeaveHistory'));
+const AssignedTasks = lazy(() => import('./pages/employee/AssignedTasks'));
 const Attendance = lazy(() => import('./pages/employee/Attendance'));
+const Regularization = lazy(() => import('./pages/employee/Regularization'));
 const HolidayCalendar = lazy(() => import('./pages/employee/HolidayCalendar'));
 const Profile = lazy(() => import('./pages/employee/Profile'));
 const MyPayroll = lazy(() => import('./pages/employee/MySalarySlips'));
@@ -68,7 +74,6 @@ const MyDocuments = lazy(() => import('./pages/employee/Documents'));
 const EmployeeHelpDesk = lazy(() => import('./pages/employee/HelpDesk'));
 const SocialFeed = lazy(() => import('./pages/employee/SocialFeed'));
 const WFHPolicy = lazy(() => import('./pages/employee/WFHPolicy'));
-const AssignedTasks = lazy(() => import('./pages/employee/AssignedTasks'));
 
 // PM Pages
 const PMDashboard = lazy(() => import('./pages/pm/Dashboard'));
@@ -120,6 +125,8 @@ function App() {
                                 <Route path="/admin/leave-requests" element={<LeaveRequests />} />
                                 <Route path="/admin/leave-types" element={<LeaveTypes />} />
                                 <Route path="/admin/attendance" element={<AttendanceRecords />} />
+                                <Route path="/admin/regularization" element={<AdminRegularizationRequests />} />
+                                <Route path="/admin/timesheets" element={<AdminTimesheets />} />
                                 <Route path="/admin/my-attendance" element={<Attendance />} />
                                 <Route path="/admin/holidays" element={<Holidays />} />
                                 <Route path="/admin/reports" element={<Reports />} />
@@ -135,6 +142,7 @@ function App() {
                                 <Route path="/admin/appraisals" element={<HRAppraisal />} />
                                 <Route path="/admin/pm-appraisals" element={<HRPMAppraisals />} />
                                 <Route path="/admin/wfh-policy" element={<WFHPolicyManager />} />
+                                <Route path="/admin/profile" element={<Profile />} />
                             </Route>
                         </Route>
 
@@ -147,6 +155,8 @@ function App() {
                                 <Route path="/hr/leave-requests" element={<HRLeaveRequests />} />
                                 <Route path="/hr/leave-types" element={<HRLeaveTypes />} />
                                 <Route path="/hr/attendance" element={<HRAttendanceRecords />} />
+                                <Route path="/hr/regularization" element={<HRRegularizationRequests />} />
+                                <Route path="/hr/timesheets" element={<HRTimesheets />} />
                                 <Route path="/hr/my-attendance" element={<Attendance />} />
                                 <Route path="/hr/holidays" element={<HRHolidays />} />
                                 <Route path="/hr/reports" element={<HRReports />} />
@@ -165,6 +175,7 @@ function App() {
                                 <Route path="/hr/allowance-reports" element={<AllowanceReports />} />
                                 <Route path="/hr/allowance-review" element={<ReviewAllowances />} />
                                 <Route path="/hr/wfh-policy" element={<WFHPolicyManager />} />
+                                <Route path="/hr/profile" element={<Profile />} />
                             </Route>
                         </Route>
                         {/* Banking Standalone Route */}
@@ -182,6 +193,7 @@ function App() {
                                 <Route path="/employee/leave-history" element={<LeaveHistory />} />
                                 <Route path="/employee/leave-status" element={<LeaveHistory />} />
                                 <Route path="/employee/attendance" element={<Attendance />} />
+                                <Route path="/employee/regularization" element={<Regularization />} />
                                 <Route path="/employee/holidays" element={<HolidayCalendar />} />
                                 <Route path="/employee/profile" element={<Profile />} />
                                 <Route path="/employee/payroll" element={<MyPayroll />} />

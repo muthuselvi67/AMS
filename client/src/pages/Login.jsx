@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 import { Eye, EyeOff, LogIn } from 'lucide-react';
-import logo from '../assets/logo.png';
+import logoLight from '../assets/logo.png';
+import logoDark from '../assets/logo-dark.svg';
 
 const Login = () => {
     const { login, loading } = useAuth();
@@ -34,7 +35,8 @@ const Login = () => {
         <div className="login-page">
             <div className="login-card">
                 <div className="login-logo animate-soft-slide stagger-1">
-                    <img src={logo} alt="Learnlike Logo" style={{ height: '70px', width: 'auto', maxWidth: '100%', marginBottom: '8px', display: 'block' }} className="animate-soft-reveal stagger-1" />
+                    <img src={logoLight} alt="Learnlike Logo" style={{ height: '70px', width: 'auto', maxWidth: '100%', marginBottom: '8px' }} className="logo-light-img animate-soft-reveal stagger-1" />
+                    <img src={logoDark} alt="Learnlike Logo" style={{ height: '70px', width: 'auto', maxWidth: '100%', marginBottom: '8px' }} className="logo-dark-img animate-soft-reveal stagger-1" />
                     <p>Attendance Management System</p>
                 </div>
 

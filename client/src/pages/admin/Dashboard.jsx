@@ -1,42 +1,46 @@
 import React, { useEffect, useState } from 'react';
-import { Users, Calendar, Home, BarChart2, Star, TrendingUp } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend, RadarChart, PolarGrid, PolarAngleAxis, Radar } from 'recharts';
+import { Users, Calendar, Home, BarChart2, Clock, Hourglass, MapPin, UserCheck, LogIn, CheckCircle, TrendingUp } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend, PieChart as RPieChart, Pie, Cell } from 'recharts';
 import api from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import DashboardCalendar from '../../components/ui/DashboardCalendar';
 
-const CRITERIA = ['performance', 'communication', 'teamwork', 'leadership', 'innovation'];
-const CRITERIA_LABELS = { performance: 'Performance', communication: 'Communication', teamwork: 'Teamwork', leadership: 'Leadership', innovation: 'Innovation' };
-const CRITERIA_COLORS = { performance: '#6366F1', communication: '#3B82F6', teamwork: '#10B981', leadership: '#F59E0B', innovation: '#EC4899' };
-
 const AdminDashboard = () => {
     const { user } = useAuth();
     const navigate = useNavigate();
     const [allAttendance, setAllAttendance] = useState([]);
     const [allLeaves, setAllLeaves] = useState([]);
-    const [appraisals, setAppraisals] = useState([]);
     const [activeTab, setActiveTab] = useState('Week'); // Week, Month, Year
+
+    const [todayRecord, setTodayRecord] = useState(null);
+    const [currentTime, setCurrentTime] = useState(new Date());
 
     useEffect(() => {
         const fetchAll = async () => {
             try {
-                const [leavesRes, attsRes, appraisalsRes] = await Promise.all([
+                const [leavesRes, attsRes, todayAttRes] = await Promise.all([
                     api.get('/leaves'),
                     api.get('/attendance'),
-                    api.get('/appraisals').catch(() => ({ data: { data: { appraisals: [] } } }))
+                    api.get('/attendance/today').catch(() => ({ data: { data: { attendance: null } } }))
                 ]);
                 const leaves = leavesRes.data.data?.leaves || leavesRes.data.data || [];
                 setAllLeaves(leaves);
                 const att = attsRes.data.data || attsRes.data || [];
                 setAllAttendance(Array.isArray(att) ? att : []);
-                setAppraisals(appraisalsRes.data.data?.appraisals || []);
+                setTodayRecord(todayAttRes.data.data?.attendance || null);
             } catch (err) {
                 console.error('Dashboard fetch error:', err);
             }
         };
         fetchAll();
+    }, []);
+
+    // Live clock ticker
+    useEffect(() => {
+        const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+        return () => clearInterval(timer);
     }, []);
 
 
@@ -175,18 +179,256 @@ const AdminDashboard = () => {
 
     const chartData = getChartData();
 
+    // ─── Leave Status Donut Data ────────────────────────────────────────────
+    const approved  = allLeaves.filter(l => l.status === 'approved').length;
+    const pending   = allLeaves.filter(l => l.status?.startsWith('pending')).length;
+    const rejected  = allLeaves.filter(l => l.status === 'rejected').length;
+    const cancelled = allLeaves.filter(l => l.status === 'cancelled').length;
+    const pieData = [
+        { name: 'Approved',  value: approved,  color: '#10B981' },
+        { name: 'Pending',   value: pending,   color: '#F59E0B' },
+        { name: 'Rejected',  value: rejected,  color: '#EF4444' },
+        { name: 'Cancelled', value: cancelled, color: '#94A3B8' },
+    ].filter(e => e.value > 0);
+
+    const renderPieLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
+        if (percent < 0.06) return null;
+        const R = Math.PI / 180;
+        const r = innerRadius + (outerRadius - innerRadius) * 0.6;
+        return (
+            <text x={cx + r * Math.cos(-midAngle * R)} y={cy + r * Math.sin(-midAngle * R)}
+                fill="white" textAnchor="middle" dominantBaseline="central" fontSize={12} fontWeight={700}>
+                {`${(percent * 100).toFixed(0)}%`}
+            </text>
+        );
+    };
+
+    // ─── Monthly leave trend Data ───────────────────────────────────────────
+    const monthlyMap = {};
+    allLeaves.forEach(l => {
+        const date = l.startDate || l.start_date;
+        if (!date) return;
+        const month = new Date(date).toLocaleString('default', { month: 'short', year: '2-digit' });
+        if (!monthlyMap[month]) monthlyMap[month] = { month, Approved: 0, Pending: 0, Rejected: 0 };
+        if (l.status === 'approved') monthlyMap[month].Approved++;
+        else if (l.status?.startsWith('pending')) monthlyMap[month].Pending++;
+        else if (l.status === 'rejected') monthlyMap[month].Rejected++;
+    });
+    const barData = Object.values(monthlyMap).slice(-6);
+
+    const tooltipStyle = {
+        background: 'var(--bg-card)',
+        border: '1px solid var(--border)',
+        borderRadius: 10,
+        boxShadow: 'var(--shadow-md)',
+        fontSize: 12,
+    };
+
+    const formatTime = (timeStr) => {
+        if (!timeStr) return '--:--';
+        return new Date(timeStr).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    };
+
+    const formatClock = (dateObj) => {
+        return dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    };
+
+    let hoursWorked = 0;
+    let minsWorked = 0;
+    let workPercent = 0;
+
+    if (todayRecord) {
+        if (todayRecord.totalHours) {
+            hoursWorked = Math.floor(todayRecord.totalHours);
+            minsWorked = Math.round((todayRecord.totalHours - hoursWorked) * 60);
+        } else if (todayRecord.checkIn?.time) {
+            const checkInDate = new Date(todayRecord.checkIn.time);
+            const diffMs = currentTime - checkInDate;
+            const diffHrs = diffMs / (1000 * 60 * 60);
+            if (diffHrs > 0) {
+                hoursWorked = Math.floor(diffHrs);
+                minsWorked = Math.round((diffHrs - hoursWorked) * 60);
+            }
+        }
+    }
+    
+    let totalFractionalHours = hoursWorked + (minsWorked / 60);
+    workPercent = Math.min(Math.round((totalFractionalHours / 9) * 100), 100);
+
+    let remHrs = Math.max(0, 8 - hoursWorked);
+    let remMins = 0;
+    if (totalFractionalHours < 9) {
+        let totalRem = 9 - totalFractionalHours;
+        remHrs = Math.floor(totalRem);
+        remMins = Math.round((totalRem - remHrs) * 60);
+    }
+
+    const checkInText = todayRecord?.checkIn?.time ? formatTime(todayRecord.checkIn.time) : '--:--';
+    const statusText = todayRecord ? (todayRecord.status || 'present').replace('-', ' ').toUpperCase() : 'ABSENT';
+    const locationText = todayRecord?.is_wfh || todayRecord?.work_from_home ? 'REMOTE' : 'OFFICE';
+    const isLate = todayRecord?.status === 'late';
+    const todayFormatted = currentTime.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+
     return (
-        <div className="fade-in">
+        <div className="emp-dashboard-container fade-in">
             {/* Page header */}
-            <div className="page-header" style={{ marginBottom: 24 }}>
-                <h1>Welcome, {user?.name?.split(' ')[0]}!</h1>
-                <p>Here's your leave and attendance overview</p>
+            <div className="emp-dash-header">
+                <div>
+                    <h1 className="emp-dash-title">Welcome, {user?.name?.split(' ')[0]}! <span role="img" aria-label="wave">👋</span></h1>
+                    <p className="emp-dash-subtitle">Here's your attendance summary for today.</p>
+                </div>
+                <div className="emp-dash-date-badge">
+                    <Calendar size={15} />
+                    <span>{todayFormatted}</span>
+                </div>
             </div>
 
-            {/* Full-width Google Calendar */}
-            <div style={{ marginBottom: 24 }}>
-                <DashboardCalendar />
+            {/* Metrics Cards */}
+            <div className="emp-metrics-grid">
+                <div className="emp-metric-card">
+                    <div className="emp-metric-icon bg-blue">
+                        <LogIn size={20} color="#3B82F6" />
+                    </div>
+                    <div className="emp-metric-info">
+                        <span className="emp-metric-label">Check-In Time</span>
+                        <div className="emp-metric-value">{checkInText}</div>
+                        <span className="emp-metric-subtext color-blue">Today</span>
+                    </div>
+                </div>
+
+                <div className="emp-metric-card">
+                    <div className="emp-metric-icon bg-green">
+                        <Clock size={20} color="#10B981" />
+                    </div>
+                    <div className="emp-metric-info">
+                        <span className="emp-metric-label">Current Time</span>
+                        <div className="emp-metric-value">{formatClock(currentTime)}</div>
+                        <span className="emp-metric-subtext color-green">{currentTime.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+                    </div>
+                </div>
+
+                <div className="emp-metric-card">
+                    <div className="emp-metric-icon bg-purple">
+                        <Hourglass size={20} color="#8B5CF6" />
+                    </div>
+                    <div className="emp-metric-info">
+                        <span className="emp-metric-label">Hours Worked</span>
+                        <div className="emp-metric-value">{String(hoursWorked).padStart(2, '0')}:{String(minsWorked).padStart(2, '0')}</div>
+                        <span className="emp-metric-subtext color-purple">{hoursWorked} Hour {minsWorked} Minutes</span>
+                    </div>
+                </div>
+
+                <div className="emp-metric-card">
+                    <div className="emp-metric-icon bg-orange">
+                        <Hourglass size={20} color="#F59E0B" style={{ transform: 'rotate(180deg)' }} />
+                    </div>
+                    <div className="emp-metric-info">
+                        <span className="emp-metric-label">Hours Remaining</span>
+                        <div className="emp-metric-value">{String(remHrs).padStart(2, '0')}:{String(remMins).padStart(2, '0')}</div>
+                        <span className="emp-metric-subtext color-orange">{remHrs} Hours {remMins} Minutes</span>
+                    </div>
+                </div>
+
+                <div className="emp-metric-card">
+                    <div className="emp-metric-icon bg-emerald">
+                        <UserCheck size={20} color="#059669" />
+                    </div>
+                    <div className="emp-metric-info">
+                        <span className="emp-metric-label">Status</span>
+                        <div className="emp-metric-value" style={{ fontSize: '18px' }}>{statusText}</div>
+                        <span className="emp-metric-subtext color-emerald">{isLate ? 'Late Arrival' : (todayRecord ? 'On Time' : 'Not Checked In')}</span>
+                    </div>
+                </div>
+
+                <div className="emp-metric-card">
+                    <div className="emp-metric-icon bg-pink">
+                        <MapPin size={20} color="#EC4899" />
+                    </div>
+                    <div className="emp-metric-info">
+                        <span className="emp-metric-label">Work Location</span>
+                        <div className="emp-metric-value" style={{ fontSize: '18px' }}>{locationText}</div>
+                        <span className="emp-metric-subtext color-pink">{todayRecord?.is_wfh || todayRecord?.work_from_home ? 'Remote Work' : 'Onsite'}</span>
+                    </div>
+                </div>
             </div>
+
+            {/* Progress Bar */}
+            <div className="emp-progress-container">
+                <span className="emp-progress-title">Work Progress</span>
+                <div className="emp-progress-track">
+                    <div className="emp-progress-fill" style={{ width: `${workPercent}%` }}>
+                        <div className="emp-progress-tooltip">{workPercent}%</div>
+                    </div>
+                </div>
+                <span className="emp-progress-text">{Math.floor(totalFractionalHours)} of 9 Hours Completed</span>
+            </div>
+
+            {/* Bottom 2-Column Layout */}
+            <div className="emp-bottom-grid" style={{ marginBottom: '32px' }}>
+                <div className="emp-overview-panel">
+                    <div className="emp-panel-header">
+                        <TrendingUp size={16} color="#8B5CF6" />
+                        <h3>Today's Attendance Overview</h3>
+                    </div>
+                    
+                    <div className="emp-overview-list">
+                        <div className="emp-list-item">
+                            <div className="emp-list-label">
+                                <Clock size={16} className="color-gray" /> Office Time
+                            </div>
+                            <div className="emp-list-value">09:30 AM - 06:30 PM</div>
+                        </div>
+                        <div className="emp-list-item">
+                            <div className="emp-list-label">
+                                <LogIn size={16} className="color-green" /> Check-In Time
+                            </div>
+                            <div className="emp-list-value color-green">{checkInText}</div>
+                        </div>
+                        <div className="emp-list-item">
+                            <div className="emp-list-label">
+                                <Clock size={16} className="color-blue" /> Current Time
+                            </div>
+                            <div className="emp-list-value color-blue">{formatClock(currentTime)}</div>
+                        </div>
+                        <div className="emp-list-item">
+                            <div className="emp-list-label">
+                                <Hourglass size={16} className="color-purple" /> Hours Worked
+                            </div>
+                            <div className="emp-list-value">{String(hoursWorked).padStart(2, '0')}:{String(minsWorked).padStart(2, '0')} ({hoursWorked} Hour)</div>
+                        </div>
+                        <div className="emp-list-item">
+                            <div className="emp-list-label">
+                                <Hourglass size={16} className="color-orange" style={{ transform: 'rotate(180deg)' }} /> Hours Remaining
+                            </div>
+                            <div className="emp-list-value">{String(remHrs).padStart(2, '0')}:{String(remMins).padStart(2, '0')} ({remHrs} Hours)</div>
+                        </div>
+                        <div className="emp-list-item">
+                            <div className="emp-list-label">
+                                <UserCheck size={16} className="color-emerald" /> Status
+                            </div>
+                            <div className="emp-list-value bg-emerald-light">{statusText}</div>
+                        </div>
+                        <div className="emp-list-item">
+                            <div className="emp-list-label">
+                                <MapPin size={16} className="color-pink" /> Work Location
+                            </div>
+                            <div className="emp-list-value bg-pink-light">{locationText}</div>
+                        </div>
+                    </div>
+
+                    <div className="emp-success-banner">
+                        <CheckCircle size={16} color="#059669" />
+                        <span>You are all set! Keep up your good work.</span>
+                    </div>
+                </div>
+
+                <div className="emp-calendar-panel">
+                    <DashboardCalendar />
+                </div>
+            </div>
+
+            {/* Team Overview section */}
+            <h2 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '16px' }}>Team Overview</h2>
 
             {/* Today's Overview + Attendance Graph */}
             <div className="dashboard-top-row">
@@ -340,141 +582,58 @@ const AdminDashboard = () => {
                 </div>
             </div>
 
-            {/* Performance Ratings Card */}
-            {(() => {
-                if (appraisals.length === 0) return null;
-
-                // Compute average per criterion across all appraisals
-                const criteriaAvg = {};
-                CRITERIA.forEach(c => {
-                    const vals = appraisals.map(a => a.ratings?.[c] || 0).filter(v => v > 0);
-                    criteriaAvg[c] = vals.length ? parseFloat((vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(2)) : 0;
-                });
-                const overallAvg = parseFloat((Object.values(criteriaAvg).reduce((a, b) => a + b, 0) / CRITERIA.length).toFixed(2));
-
-                // Top performers (by avgRating)
-                const sorted = [...appraisals]
-                    .filter(a => a.avgRating)
-                    .sort((a, b) => (b.avgRating || 0) - (a.avgRating || 0))
-                    .slice(0, 5);
-
-                const radarData = CRITERIA.map(c => ({
-                    subject: CRITERIA_LABELS[c],
-                    value: criteriaAvg[c],
-                    fullMark: 5
-                }));
-
-                const ratingLabel = overallAvg >= 4.5 ? 'Excellent' : overallAvg >= 3.5 ? 'Good' : overallAvg >= 2.5 ? 'Average' : 'Needs Improvement';
-                const ratingColor = overallAvg >= 4.5 ? '#10B981' : overallAvg >= 3.5 ? '#6366F1' : overallAvg >= 2.5 ? '#F59E0B' : '#EF4444';
-
-                return (
-                    <div className="card" style={{ marginBottom: 24 }}>
-                        {/* Card Header */}
-                        <div className="card-header" style={{ borderBottom: '1px solid #F0F0F0', paddingBottom: 14 }}>
-                            <div className="card-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                <TrendingUp size={18} color="#6366F1" />
-                                Performance Ratings Overview
-                            </div>
-                            <button
-                                className="btn btn-ghost btn-sm"
-                                onClick={() => navigate('/admin/appraisals')}
-                                style={{ color: '#6366F1', fontWeight: 600 }}
-                            >
-                                View All →
-                            </button>
-                        </div>
-
-                        <div className="performance-grid">
-
-                            {/* Left: Criteria breakdown bars */}
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                                <div style={{ fontSize: 12, fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 4 }}>Criteria Breakdown</div>
-                                {CRITERIA.map(c => {
-                                    const val = criteriaAvg[c];
-                                    const pct = (val / 5) * 100;
-                                    return (
-                                        <div key={c}>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
-                                                <span style={{ fontSize: 12, fontWeight: 600, color: '#374151' }}>{CRITERIA_LABELS[c]}</span>
-                                                <span style={{ fontSize: 12, fontWeight: 700, color: CRITERIA_COLORS[c] }}>{val}/5</span>
-                                            </div>
-                                            <div style={{ height: 8, background: '#F3F4F6', borderRadius: 6, overflow: 'hidden' }}>
-                                                <div style={{
-                                                    width: `${pct}%`,
-                                                    height: '100%',
-                                                    borderRadius: 6,
-                                                    background: `linear-gradient(90deg, ${CRITERIA_COLORS[c]}99, ${CRITERIA_COLORS[c]})`,
-                                                    transition: 'width 0.8s ease'
-                                                }} />
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-
-                            {/* Middle: Radar chart */}
-                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                                <div style={{ fontSize: 12, fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 4, alignSelf: 'flex-start' }}>Skill Radar</div>
-                                <ResponsiveContainer width="100%" height={180}>
-                                    <RadarChart data={radarData}>
-                                        <PolarGrid stroke="#E5E7EB" />
-                                        <PolarAngleAxis dataKey="subject" tick={{ fontSize: 10, fill: '#6B7280' }} />
-                                        <Radar name="Avg" dataKey="value" stroke="#6366F1" fill="#6366F1" fillOpacity={0.25} strokeWidth={2} />
-                                    </RadarChart>
-                                </ResponsiveContainer>
-                            </div>
-
-                            {/* Right: Overall score + top performers */}
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                                {/* Overall score */}
-                                <div style={{ background: 'linear-gradient(135deg, #6366F111, #6366F122)', borderRadius: 12, padding: '16px 20px', textAlign: 'center', border: '1px solid #6366F130' }}>
-                                    <div style={{ fontSize: 11, fontWeight: 700, color: '#6366F1', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 8 }}>Overall Avg Rating</div>
-                                    <div style={{ fontSize: 40, fontWeight: 800, color: ratingColor, lineHeight: 1 }}>{overallAvg}</div>
-                                    <div style={{ fontSize: 12, color: '#9CA3AF', marginBottom: 8 }}>out of 5</div>
-                                    <div style={{ display: 'flex', justifyContent: 'center', gap: 3, marginBottom: 6 }}>
-                                        {[1,2,3,4,5].map(n => (
-                                            <Star key={n} size={14}
-                                                fill={n <= Math.round(overallAvg) ? '#F59E0B' : 'none'}
-                                                color={n <= Math.round(overallAvg) ? '#F59E0B' : '#D1D5DB'}
-                                            />
-                                        ))}
-                                    </div>
-                                    <span style={{ fontSize: 12, fontWeight: 700, color: ratingColor, background: `${ratingColor}15`, padding: '3px 10px', borderRadius: 20 }}>{ratingLabel}</span>
-                                </div>
-
-                                {/* Top performers */}
-                                <div>
-                                    <div style={{ fontSize: 11, fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 8 }}>Top Performers</div>
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                                        {sorted.map((a, i) => (
-                                            <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                                <div style={{
-                                                    width: 22, height: 22, borderRadius: '50%', flexShrink: 0,
-                                                    background: ['#6366F1','#3B82F6','#10B981','#F59E0B','#EC4899'][i],
-                                                    color: '#fff', display: 'flex', alignItems: 'center',
-                                                    justifyContent: 'center', fontSize: 9, fontWeight: 700
-                                                }}>
-                                                    {(a.employee?.name || '?').charAt(0).toUpperCase()}
-                                                </div>
-                                                <div style={{ flex: 1, minWidth: 0 }}>
-                                                    <div style={{ fontSize: 12, fontWeight: 600, color: '#1F2937', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                                        {a.employee?.name || 'Unknown'}
-                                                    </div>
-                                                    <div style={{ fontSize: 10, color: '#9CA3AF' }}>{a.period}</div>
-                                                </div>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: 3, flexShrink: 0 }}>
-                                                    <Star size={11} fill="#F59E0B" color="#F59E0B" />
-                                                    <span style={{ fontSize: 12, fontWeight: 700, color: '#F59E0B' }}>{Number(a.avgRating).toFixed(1)}</span>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+            {/* Leave Charts */}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24, marginBottom: 24 }}>
+                {/* Donut — Leave Status */}
+                <div className="card" style={{ flex: '1 1 300px', padding: '24px', minWidth: 0 }}>
+                    <div className="card-header" style={{ marginBottom: 12 }}>
+                        <div className="card-title">Leave Status Distribution</div>
+                        <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>All time</span>
                     </div>
-                );
-            })()}
+                    {pieData.length === 0
+                        ? <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '40px 0', fontSize: 13 }}>No leave data yet</div>
+                        : <>
+                            <ResponsiveContainer width="100%" height={220}>
+                                <RPieChart>
+                                    <Pie data={pieData} cx="50%" cy="50%" innerRadius={60} outerRadius={90}
+                                        paddingAngle={3} dataKey="value" labelLine={false} label={renderPieLabel} stroke="none">
+                                        {pieData.map((e, i) => <Cell key={i} fill={e.color} />)}
+                                    </Pie>
+                                    <Tooltip formatter={(v, n) => [`${v} requests`, n]} contentStyle={tooltipStyle} />
+                                    <Legend iconType="circle" iconSize={9} wrapperStyle={{ fontSize: 12 }} />
+                                </RPieChart>
+                            </ResponsiveContainer>
+                            <div style={{ textAlign: 'center', marginTop: -4 }}>
+                                <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--text-primary)' }}>{allLeaves.length}</div>
+                                <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600 }}>Total Requests</div>
+                            </div>
+                        </>
+                    }
+                </div>
+
+                {/* Bar — Monthly Leave Trends */}
+                <div className="card" style={{ flex: '1.6 1 300px', padding: '24px', minWidth: 0 }}>
+                    <div className="card-header" style={{ marginBottom: 12 }}>
+                        <div className="card-title">Monthly Leave Trends</div>
+                        <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Last 6 months</span>
+                    </div>
+                    {barData.length === 0
+                        ? <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '40px 0', fontSize: 13 }}>No leave data yet</div>
+                        : <ResponsiveContainer width="100%" height={260}>
+                            <BarChart data={barData} barSize={16} barCategoryGap="35%">
+                                <CartesianGrid strokeDasharray="3 3" stroke="var(--border-light)" vertical={false} />
+                                <XAxis dataKey="month" tick={{ fontSize: 11, fill: 'var(--text-muted)', fontWeight: 600 }} axisLine={false} tickLine={false} />
+                                <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false} />
+                                <Tooltip cursor={{ fill: 'var(--primary-light)', opacity: 0.5 }} contentStyle={tooltipStyle} />
+                                <Legend iconType="circle" iconSize={9} wrapperStyle={{ fontSize: 12, paddingTop: 12 }} />
+                                <Bar dataKey="Approved" fill="#10B981" radius={[6, 6, 0, 0]} />
+                                <Bar dataKey="Pending"  fill="#F59E0B" radius={[6, 6, 0, 0]} />
+                                <Bar dataKey="Rejected" fill="#EF4444" radius={[6, 6, 0, 0]} />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    }
+                </div>
+            </div>
         </div>
     );
 };
