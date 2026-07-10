@@ -1874,6 +1874,7 @@ textarea.form-control {
   overflow: hidden;
   position: relative;
 }
+
 .hr-welcome-banner h1 {
   color: #4C1D95;
   margin-bottom: 8px;
@@ -1884,6 +1885,7 @@ textarea.form-control {
   font-weight: 800;
   font-size: 28px;
 }
+
 .hr-welcome-banner p {
   color: #6D28D9;
   font-size: 15px;
@@ -1896,9 +1898,11 @@ textarea.form-control {
   background: rgba(139, 92, 246, 0.1);
   border: 1px solid rgba(139, 92, 246, 0.2);
 }
+
 [data-theme="dark"] .hr-welcome-banner h1 {
   color: #DDD6FE;
 }
+
 [data-theme="dark"] .hr-welcome-banner p {
   color: #A78BFA;
 }
@@ -1964,8 +1968,10 @@ textarea.form-control {
   flex-wrap: nowrap;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
-  padding-bottom: 12px; /* Allow space for touch and scrollbar */
+  padding-bottom: 12px;
+  /* Allow space for touch and scrollbar */
 }
+
 /* Full bleed on mobile */
 @media (max-width: 640px) {
   .filter-chips {
@@ -1975,6 +1981,7 @@ textarea.form-control {
     padding-right: 12px;
   }
 }
+
 .filter-chips .btn {
   white-space: nowrap;
   flex-shrink: 0;
@@ -3069,7 +3076,7 @@ textarea.form-control {
 
   /* Aggressive Layout Constraints */
   .page-content,
-  .page-content > div,
+  .page-content>div,
   .fade-in,
   .card,
   .table-container {
@@ -3350,6 +3357,7 @@ textarea.form-control {
   overflow: hidden;
   box-shadow: 0 4px 20px rgba(139, 92, 246, 0.08);
 }
+
 [data-theme="dark"] .emp-page-header {
   background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(99, 102, 241, 0.15) 100%);
   border: 1px solid rgba(139, 92, 246, 0.2);
@@ -3409,6 +3417,7 @@ textarea.form-control {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
   transition: transform 0.2s;
 }
+
 .emp-stat-card:hover {
   transform: translateY(-2px);
 }
@@ -3492,6 +3501,7 @@ textarea.form-control {
   color: #fff;
   box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
 }
+
 [data-theme="dark"] .emp-tab.active {
   color: #111;
 }
@@ -3517,22 +3527,40 @@ textarea.form-control {
   background: #F5F3FF;
   color: #7C3AED;
 }
-[data-theme="dark"] .btn-icon-circle.view { background: rgba(124, 58, 237, 0.15); }
-.btn-icon-circle.view:hover { background: #EDE9FE; }
+
+[data-theme="dark"] .btn-icon-circle.view {
+  background: rgba(124, 58, 237, 0.15);
+}
+
+.btn-icon-circle.view:hover {
+  background: #EDE9FE;
+}
 
 .btn-icon-circle.edit {
   background: #EFF6FF;
   color: #3B82F6;
 }
-[data-theme="dark"] .btn-icon-circle.edit { background: rgba(59, 130, 246, 0.15); }
-.btn-icon-circle.edit:hover { background: #DBEAFE; }
+
+[data-theme="dark"] .btn-icon-circle.edit {
+  background: rgba(59, 130, 246, 0.15);
+}
+
+.btn-icon-circle.edit:hover {
+  background: #DBEAFE;
+}
 
 .btn-icon-circle.danger {
   background: #FEF2F2;
   color: #EF4444;
 }
-[data-theme="dark"] .btn-icon-circle.danger { background: rgba(239, 68, 68, 0.15); }
-.btn-icon-circle.danger:hover { background: #FEE2E2; }
+
+[data-theme="dark"] .btn-icon-circle.danger {
+  background: rgba(239, 68, 68, 0.15);
+}
+
+.btn-icon-circle.danger:hover {
+  background: #FEE2E2;
+}
 
 /* ─────────────────────────────────────────
    Profile Page Layout
@@ -3698,12 +3726,29 @@ textarea.form-control {
   flex-shrink: 0;
 }
 
-.emp-metric-icon.bg-blue { background: #DBEAFE; }
-.emp-metric-icon.bg-green { background: #D1FAE5; }
-.emp-metric-icon.bg-purple { background: #EDE9FE; }
-.emp-metric-icon.bg-orange { background: #FEF3C7; }
-.emp-metric-icon.bg-emerald { background: #DCFCE7; }
-.emp-metric-icon.bg-pink { background: #FCE7F3; }
+.emp-metric-icon.bg-blue {
+  background: #DBEAFE;
+}
+
+.emp-metric-icon.bg-green {
+  background: #D1FAE5;
+}
+
+.emp-metric-icon.bg-purple {
+  background: #EDE9FE;
+}
+
+.emp-metric-icon.bg-orange {
+  background: #FEF3C7;
+}
+
+.emp-metric-icon.bg-emerald {
+  background: #DCFCE7;
+}
+
+.emp-metric-icon.bg-pink {
+  background: #FCE7F3;
+}
 
 .emp-metric-info {
   display: flex;
@@ -3729,13 +3774,33 @@ textarea.form-control {
   font-weight: 600;
 }
 
-.color-blue { color: #3B82F6; }
-.color-green { color: #10B981; }
-.color-purple { color: #8B5CF6; }
-.color-orange { color: #F59E0B; }
-.color-emerald { color: #059669; }
-.color-pink { color: #EC4899; }
-.color-gray { color: var(--text-muted); }
+.color-blue {
+  color: #3B82F6;
+}
+
+.color-green {
+  color: #10B981;
+}
+
+.color-purple {
+  color: #8B5CF6;
+}
+
+.color-orange {
+  color: #F59E0B;
+}
+
+.color-emerald {
+  color: #059669;
+}
+
+.color-pink {
+  color: #EC4899;
+}
+
+.color-gray {
+  color: var(--text-muted);
+}
 
 /* Progress Bar */
 .emp-progress-container {
@@ -3840,7 +3905,7 @@ textarea.form-control {
   flex-direction: column;
   gap: 16px;
   flex: 1;
-  justify-content: space-between;
+  justify-content: flex-start;
 }
 
 .emp-list-item {
@@ -3852,6 +3917,7 @@ textarea.form-control {
   padding-bottom: 12px;
   border-bottom: 1px dashed var(--border);
 }
+
 .emp-list-item:last-child {
   border-bottom: none;
 }
@@ -3923,6 +3989,7 @@ textarea.form-control {
     flex-direction: column;
     gap: 16px;
   }
+
   .emp-metrics-grid {
     grid-template-columns: 1fr 1fr;
   }
@@ -3932,7 +3999,7 @@ textarea.form-control {
   .emp-dashboard-container {
     padding: 16px 12px;
   }
-  
+
   .emp-overview-panel,
   .emp-calendar-panel {
     padding: 12px;
@@ -3942,12 +4009,13 @@ textarea.form-control {
     grid-template-columns: 1fr;
   }
 }
+
 /* Logo visibility toggling based on theme */
 html[data-theme='light'] .logo-dark-img,
 html:not([data-theme='dark']) .logo-dark-img {
-    display: none !important;
+  display: none !important;
 }
 
 html[data-theme='dark'] .logo-light-img {
-    display: none !important;
+  display: none !important;
 }

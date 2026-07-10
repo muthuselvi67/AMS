@@ -139,7 +139,6 @@ const NotificationsPage = () => {
                                     <th>Notification Details</th>
                                     <th>Received</th>
                                     <th>Status</th>
-                                    <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -187,18 +186,6 @@ const NotificationsPage = () => {
                                                 <span className="badge-dot" />
                                                 {n.isRead ? 'Read' : 'Unread'}
                                             </span>
-                                        </td>
-                                        <td>
-                                            <div style={{ display: 'flex', gap: 6 }} onClick={e => e.stopPropagation()}>
-                                                <button className="btn btn-secondary btn-sm" onClick={() => handleNotifClick(n)}>
-                                                    View
-                                                </button>
-                                                {!n.isRead && (
-                                                    <button className="btn btn-ghost btn-sm" onClick={() => markRead(n.id)} title="Mark as read">
-                                                        <CheckCheck size={14} />
-                                                    </button>
-                                                )}
-                                            </div>
                                         </td>
                                     </tr>
                                 ))}

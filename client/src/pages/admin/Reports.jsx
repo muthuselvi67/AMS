@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Download, FileSpreadsheet, BarChart3 } from 'lucide-react';
 import api from '../../api/axios';
 import toast from 'react-hot-toast';
-import logo from '../../assets/logo.svg';
 import * as XLSX from 'xlsx';
 
 
@@ -41,7 +40,6 @@ const Reports = () => {
     return (
         <div className="fade-in">
             <div className="page-header" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                <img src={logo} alt="Learnlike Logo" style={{ height: '48px', width: 'auto' }} />
                 <div>
                     <h1>Reports & Analytics</h1>
                     <p>Export attendance and leave reports as Excel-compatible CSV files</p>

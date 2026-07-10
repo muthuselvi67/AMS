@@ -266,8 +266,15 @@ const Employees = () => {
                                                 </tr>
                                             ))
                                         ) : (
-                                            employees.filter(emp => activeTab === 'all' ? true : (activeTab === 'active' ? emp.isActive : !emp.isActive)).sort((a, b) => (b.isActive ? 1 : 0) - (a.isActive ? 1 : 0)).map(emp => (
-                                                <tr key={emp.id} style={{ borderBottom: '1px dashed var(--border)' }}>
+                                            employees.filter(emp => activeTab === 'all' ? true : (activeTab === 'active' ? emp.isActive : !emp.isActive)).sort((a, b) => {
+                                                if (a.isActive !== b.isActive) return (b.isActive ? 1 : 0) - (a.isActive ? 1 : 0);
+                                                const roleOrder = { 'admin': 1, 'hr': 2, 'employee': 3 };
+                                                const weightA = roleOrder[a.role?.toLowerCase()] || 4;
+                                                const weightB = roleOrder[b.role?.toLowerCase()] || 4;
+                                                if (weightA !== weightB) return weightA - weightB;
+                                                return a.name.localeCompare(b.name);
+                                            }).map(emp => (
+                                                <tr key={emp.id} style={{ borderBottom: '1px dashed var(--border)', background: emp.isActive ? 'transparent' : 'var(--bg-light)', opacity: emp.isActive ? 1 : 0.6 }}>
                                                     <td>
                                                         <div 
                                                             className="table-avatar" 

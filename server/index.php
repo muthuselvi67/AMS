@@ -182,6 +182,12 @@ switch ($resource) {
         $controller = new RegularizationController($db, $method, $id, $user, $subId);
         $controller->processRequest();
         break;
+    case 'timesheets':
+        require_once __DIR__ . '/controllers/TimesheetController.php';
+        $controller = new TimesheetController($db, $method, $id, $user, $subId);
+        // We will update TimesheetController to have processRequest
+        $controller->processRequest();
+        break;
     default:
         Response::json(false, "Invalid endpoint: " . ($resource ?? 'root'), ["uri" => $uri], 404);
         break;

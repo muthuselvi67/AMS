@@ -290,13 +290,7 @@ const EmployeeProfileView = () => {
       {/* ── Page Header ── */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28, flexWrap: 'wrap', gap: 12 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <button
-            onClick={() => navigate(-1)}
-            className="btn btn-secondary btn-icon"
-            style={{ borderRadius: 12 }}
-          >
-            <ChevronLeft size={18} />
-          </button>
+
           <div>
             <h1 style={{ fontSize: 22, fontWeight: 800, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.4px' }}>
               Employee Profile

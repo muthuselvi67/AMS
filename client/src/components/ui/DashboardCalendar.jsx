@@ -481,29 +481,12 @@ export default function DashboardCalendar() {
                             <CalendarDays size={24} />
                         </div>
 
-                        <h2 className="calendar-month-title" style={{ margin: 0, fontSize: '24px', fontWeight: 800, color: 'var(--text-color)', letterSpacing: '-0.5px' }}>
+                        <h2 className="calendar-month-title" style={{ margin: 0, fontSize: '24px', fontWeight: 800, color: 'var(--text-color)', letterSpacing: '-0.5px', whiteSpace: 'nowrap' }}>
                             {MONTHS[mo]} {yr}
                         </h2>
 
                         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginLeft: 8 }}>
-                            <button
-                                onClick={goToday}
-                                style={{
-                                    padding: '8px 20px',
-                                    fontSize: '13px',
-                                    fontWeight: 700,
-                                    border: '1px solid var(--border)',
-                                    borderRadius: 8,
-                                    background: 'var(--bg-white)',
-                                    color: 'var(--primary)',
-                                    cursor: 'pointer',
-                                    transition: 'all 0.15s',
-                                }}
-                                onMouseOver={e => { e.currentTarget.style.borderColor = 'var(--primary)'; e.currentTarget.style.background = 'var(--bg-light)'; }}
-                                onMouseOut={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'var(--bg-white)'; }}
-                            >
-                                Today
-                            </button>
+
 
                             <div style={{ display: 'flex', gap: 8 }}>
                                 <button
@@ -527,28 +510,9 @@ export default function DashboardCalendar() {
                     </div>
 
                     {/* Right: Quick-action buttons */}
-                    <div className="calendar-header-right" style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', flexWrap: 'wrap', gap: 12 }}>
-                        <button
-                            onClick={() => navigate(attendancePath)}
-                            style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 18px', fontSize: '13px', fontWeight: 600, border: '1px solid var(--primary)', borderRadius: 8, background: 'var(--bg-white)', color: 'var(--primary)', cursor: 'pointer', transition: 'all 0.15s', whiteSpace: 'nowrap' }}
-                            onMouseOver={e => { e.currentTarget.style.background = 'var(--bg-light)'; }}
-                            onMouseOut={e => { e.currentTarget.style.background = 'var(--bg-white)'; }}
-                        >
-                            <Clock size={16} />
-                            {attendanceLabel}
-                        </button>
+                    <div className="calendar-header-right" style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', flexWrap: 'wrap', gap: 12, marginLeft: 'auto' }}>
 
-                        {(role === 'admin' || role === 'hr') && (
-                            <button
-                                onClick={() => navigate(`/${role}/attendance`)}
-                                style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 18px', fontSize: '13px', fontWeight: 600, border: '1px solid var(--primary)', borderRadius: 8, background: 'var(--bg-white)', color: 'var(--primary)', cursor: 'pointer', transition: 'all 0.15s', whiteSpace: 'nowrap' }}
-                                onMouseOver={e => { e.currentTarget.style.background = 'var(--bg-light)'; }}
-                                onMouseOut={e => { e.currentTarget.style.background = 'var(--bg-white)'; }}
-                            >
-                                <Users size={16} />
-                                View Attendance
-                            </button>
-                        )}
+
 
                         <button
                             onClick={() => navigate(leavePath)}

@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { Users, Calendar, Home, BarChart2, Clock, Hourglass, MapPin, UserCheck, LogIn, CheckCircle, TrendingUp } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { Users, Calendar, Home, BarChart2, Clock, Hourglass, MapPin, UserCheck, LogIn, CheckCircle, TrendingUp, Gift, Newspaper, Search, Plus } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend, PieChart as RPieChart, Pie, Cell } from 'recharts';
 import api from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import DashboardCalendar from '../../components/ui/DashboardCalendar';
+import SelfieCapture from '../../components/ui/SelfieCapture';
 
 const AdminDashboard = () => {
     const { user } = useAuth();
@@ -13,23 +15,33 @@ const AdminDashboard = () => {
     const [allAttendance, setAllAttendance] = useState([]);
     const [allLeaves, setAllLeaves] = useState([]);
     const [activeTab, setActiveTab] = useState('Week'); // Week, Month, Year
+    const [announcements, setAnnouncements] = useState([]);
 
     const [todayRecord, setTodayRecord] = useState(null);
     const [currentTime, setCurrentTime] = useState(new Date());
+    const [showCheckoutModal, setShowCheckoutModal] = useState(false);
+    const [showCheckInModal, setShowCheckInModal] = useState(false);
+    const [showSelfieModal, setShowSelfieModal] = useState(false);
+    const [pendingCheckInCoords, setPendingCheckInCoords] = useState(null);
+    const [searchAnn, setSearchAnn] = useState('');
+    const [filterAnn, setFilterAnn] = useState('');
 
     useEffect(() => {
         const fetchAll = async () => {
             try {
-                const [leavesRes, attsRes, todayAttRes] = await Promise.all([
+                const [leavesRes, attsRes, todayAttRes, annRes] = await Promise.all([
                     api.get('/leaves'),
                     api.get('/attendance'),
-                    api.get('/attendance/today').catch(() => ({ data: { data: { attendance: null } } }))
+                    api.get('/attendance/today').catch(() => ({ data: { data: { attendance: null } } })),
+                    api.get('/announcements').catch(() => ({ data: { data: { announcements: [] } } }))
                 ]);
                 const leaves = leavesRes.data.data?.leaves || leavesRes.data.data || [];
                 setAllLeaves(leaves);
                 const att = attsRes.data.data || attsRes.data || [];
                 setAllAttendance(Array.isArray(att) ? att : []);
                 setTodayRecord(todayAttRes.data.data?.attendance || null);
+                const anns = annRes.data.data?.announcements || [];
+                setAnnouncements(Array.isArray(anns) ? anns : []);
             } catch (err) {
                 console.error('Dashboard fetch error:', err);
             }
@@ -43,6 +55,54 @@ const AdminDashboard = () => {
         return () => clearInterval(timer);
     }, []);
 
+    const handleQuickAttendance = async () => {
+        if (todayRecord?.checkIn?.time && !todayRecord?.checkOut?.time) {
+            setShowCheckoutModal(true);
+        } else if (!todayRecord?.checkIn?.time) {
+            setShowCheckInModal(true);
+        }
+    };
+
+    const confirmCheckIn = (officeName) => {
+        let coords;
+        if (officeName === 'Work From Home') {
+            coords = { work_from_home: 1, latitude: 0, longitude: 0, address: 'Work From Home' };
+        } else {
+            coords = officeName === 'Hicas' 
+                ? { latitude: 11.0126179, longitude: 76.9905965, address: 'Hicas' }
+                : { latitude: 10.9984474, longitude: 76.9914006, address: 'LearnLike' };
+        }
+            
+        setPendingCheckInCoords(coords);
+        setShowCheckInModal(false);
+        setShowSelfieModal(true);
+    };
+
+    const handleSelfieConfirm = async (selfieBase64) => {
+        if (!pendingCheckInCoords) return;
+        const payload = { ...pendingCheckInCoords, photo: selfieBase64 };
+        try {
+            await api.post('/attendance/checkin', payload);
+            const res = await api.get('/attendance/today').catch(() => ({ data: { data: { attendance: null } } }));
+            setTodayRecord(res.data.data?.attendance || null);
+            setShowSelfieModal(false);
+            setPendingCheckInCoords(null);
+        } catch (err) {
+            alert(err.response?.data?.message || 'Failed to check in');
+        }
+    };
+
+    const confirmCheckOut = async () => {
+        try {
+            await api.post('/attendance/checkout', { latitude: 10.9984474, longitude: 76.9914006, address: 'LearnLike' });
+            const res = await api.get('/attendance/today').catch(() => ({ data: { data: { attendance: null } } }));
+            setTodayRecord(res.data.data?.attendance || null);
+            setShowCheckoutModal(false);
+        } catch (err) {
+            alert(err.response?.data?.message || 'Failed to check out');
+        }
+    };
+
 
 
     // Timezone-safe local today date string (YYYY-MM-DD)
@@ -52,8 +112,8 @@ const AdminDashboard = () => {
     const d = String(localToday.getDate()).padStart(2, '0');
     const todayStr = `${y}-${m}-${d}`;
 
-    const presentToday  = allAttendance.filter(a => a.date === todayStr && !a.work_from_home);
-    const wfhToday      = allAttendance.filter(a => a.date === todayStr && !!a.work_from_home);
+    const presentToday = allAttendance.filter(a => a.date === todayStr && !a.work_from_home);
+    const wfhToday = allAttendance.filter(a => a.date === todayStr && !!a.work_from_home);
 
     const leavesToday = allLeaves.filter(l => {
         if (l.status !== 'approved') return false;
@@ -67,14 +127,14 @@ const AdminDashboard = () => {
         const atts = allAttendance.filter(a => a.date === dateStr);
         const present = atts.filter(a => !a.work_from_home && a.status !== 'on-leave').length;
         const wfh = atts.filter(a => !!a.work_from_home && a.status !== 'on-leave').length;
-        
+
         const leaves = allLeaves.filter(l => {
             if (l.status !== 'approved') return false;
             const start = l.startDate || l.start_date;
             const end = l.endDate || l.end_date;
             return start <= dateStr && end >= dateStr;
         }).length;
-        
+
         return { present, wfh, leaves };
     };
 
@@ -88,7 +148,7 @@ const AdminDashboard = () => {
             const curM = String(temp.getMonth() + 1).padStart(2, '0');
             const curD = String(temp.getDate()).padStart(2, '0');
             const dateStr = `${curY}-${curM}-${curD}`;
-            
+
             const label = temp.toLocaleDateString([], { weekday: 'short', day: 'numeric' });
             const stats = getStatsForDate(dateStr);
             data.push({
@@ -107,11 +167,11 @@ const AdminDashboard = () => {
         for (let i = 3; i >= 0; i--) {
             const start = new Date();
             start.setDate(start.getDate() - (i * 7 + 6));
-            
+
             let totalPresent = 0;
             let totalWFH = 0;
             let totalLeaves = 0;
-            
+
             for (let j = 0; j < 7; j++) {
                 const cur = new Date(start);
                 cur.setDate(cur.getDate() + j);
@@ -119,13 +179,13 @@ const AdminDashboard = () => {
                 const curM = String(cur.getMonth() + 1).padStart(2, '0');
                 const curD = String(cur.getDate()).padStart(2, '0');
                 const dateStr = `${curY}-${curM}-${curD}`;
-                
+
                 const stats = getStatsForDate(dateStr);
                 totalPresent += stats.present;
                 totalWFH += stats.wfh;
                 totalLeaves += stats.leaves;
             }
-            
+
             const label = `Week -${i}`;
             data.push({
                 name: i === 0 ? 'This Wk' : label,
@@ -142,16 +202,16 @@ const AdminDashboard = () => {
         const data = [];
         const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
         const now = new Date();
-        
+
         for (let i = 11; i >= 0; i--) {
             const temp = new Date(now.getFullYear(), now.getMonth() - i, 1);
             const year = temp.getFullYear();
             const month = temp.getMonth();
-            
+
             let totalPresent = 0;
             let totalWFH = 0;
             let totalLeaves = 0;
-            
+
             const daysInMonth = new Date(year, month + 1, 0).getDate();
             for (let day = 1; day <= daysInMonth; day++) {
                 const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
@@ -160,7 +220,7 @@ const AdminDashboard = () => {
                 totalWFH += stats.wfh;
                 totalLeaves += stats.leaves;
             }
-            
+
             data.push({
                 name: `${monthNames[month]}`,
                 Present: totalPresent,
@@ -180,14 +240,14 @@ const AdminDashboard = () => {
     const chartData = getChartData();
 
     // ─── Leave Status Donut Data ────────────────────────────────────────────
-    const approved  = allLeaves.filter(l => l.status === 'approved').length;
-    const pending   = allLeaves.filter(l => l.status?.startsWith('pending')).length;
-    const rejected  = allLeaves.filter(l => l.status === 'rejected').length;
+    const approved = allLeaves.filter(l => l.status === 'approved').length;
+    const pending = allLeaves.filter(l => l.status?.startsWith('pending')).length;
+    const rejected = allLeaves.filter(l => l.status === 'rejected').length;
     const cancelled = allLeaves.filter(l => l.status === 'cancelled').length;
     const pieData = [
-        { name: 'Approved',  value: approved,  color: '#10B981' },
-        { name: 'Pending',   value: pending,   color: '#F59E0B' },
-        { name: 'Rejected',  value: rejected,  color: '#EF4444' },
+        { name: 'Approved', value: approved, color: '#10B981' },
+        { name: 'Pending', value: pending, color: '#F59E0B' },
+        { name: 'Rejected', value: rejected, color: '#EF4444' },
         { name: 'Cancelled', value: cancelled, color: '#94A3B8' },
     ].filter(e => e.value > 0);
 
@@ -251,7 +311,7 @@ const AdminDashboard = () => {
             }
         }
     }
-    
+
     let totalFractionalHours = hoursWorked + (minsWorked / 60);
     workPercent = Math.min(Math.round((totalFractionalHours / 9) * 100), 100);
 
@@ -277,9 +337,33 @@ const AdminDashboard = () => {
                     <h1 className="emp-dash-title">Welcome, {user?.name?.split(' ')[0]}! <span role="img" aria-label="wave">👋</span></h1>
                     <p className="emp-dash-subtitle">Here's your attendance summary for today.</p>
                 </div>
-                <div className="emp-dash-date-badge">
-                    <Calendar size={15} />
-                    <span>{todayFormatted}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                    <button
+                        onClick={handleQuickAttendance}
+                        style={{
+                            display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 18px',
+                            fontSize: '13px', fontWeight: 600, border: 'none', borderRadius: '8px',
+                            background: todayRecord?.checkIn?.time && !todayRecord?.checkOut?.time ? '#EF4444' : '#10B981',
+                            color: '#fff', cursor: 'pointer', transition: 'all 0.15s', whiteSpace: 'nowrap'
+                        }}
+                        onMouseOver={e => { e.currentTarget.style.opacity = 0.9; }}
+                        onMouseOut={e => { e.currentTarget.style.opacity = 1; }}
+                    >
+                        {todayRecord?.checkIn?.time && !todayRecord?.checkOut?.time ? 'Check Out' : 'Check In'}
+                    </button>
+                    <button
+                        onClick={() => navigate(user?.role?.toLowerCase() === 'employee' ? '/employee/attendance' : `/${user?.role?.toLowerCase() || 'admin'}/attendance`)}
+                        style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 18px', fontSize: '13px', fontWeight: 600, border: '1px solid var(--primary)', borderRadius: '8px', background: 'var(--bg-white)', color: 'var(--primary)', cursor: 'pointer', transition: 'all 0.15s', whiteSpace: 'nowrap' }}
+                        onMouseOver={e => { e.currentTarget.style.background = 'var(--bg-light)'; }}
+                        onMouseOut={e => { e.currentTarget.style.background = 'var(--bg-white)'; }}
+                    >
+                        <Clock size={16} />
+                        {user?.role?.toLowerCase() === 'employee' ? 'Add Attendance' : 'View Team Attendance'}
+                    </button>
+                    <div className="emp-dash-date-badge">
+                        <Calendar size={15} />
+                        <span>{todayFormatted}</span>
+                    </div>
                 </div>
             </div>
 
@@ -365,60 +449,83 @@ const AdminDashboard = () => {
 
             {/* Bottom 2-Column Layout */}
             <div className="emp-bottom-grid" style={{ marginBottom: '32px' }}>
-                <div className="emp-overview-panel">
-                    <div className="emp-panel-header">
-                        <TrendingUp size={16} color="#8B5CF6" />
-                        <h3>Today's Attendance Overview</h3>
-                    </div>
-                    
-                    <div className="emp-overview-list">
-                        <div className="emp-list-item">
-                            <div className="emp-list-label">
-                                <Clock size={16} className="color-gray" /> Office Time
+                {/* Left Column: Announcements and Birthdays */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', height: '100%', justifyContent: 'space-between' }}>
+                    <div className="emp-overview-panel" style={{ display: 'flex', flexDirection: 'column', height: 'fit-content' }}>
+                        <div className="emp-panel-header" style={{ flexWrap: 'wrap', gap: '10px' }}>
+                            <h3 style={{ width: '100%' }}>Announcements 📢</h3>
+                            <div style={{ display: 'flex', gap: '8px', width: '100%', flexWrap: 'wrap' }}>
+                                <div style={{ position: 'relative', flex: 1, minWidth: '150px' }}>
+                                    <Search size={15} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                                    <input className="form-control" style={{ padding: '0 10px 0 32px', height: '36px', fontSize: '13px' }} placeholder="Search announcements..." value={searchAnn} onChange={e => setSearchAnn(e.target.value)} />
+                                </div>
+                                <select className="form-control" style={{ width: '120px', height: '36px', padding: '0 28px 0 10px', fontSize: '13px' }} value={filterAnn} onChange={e => setFilterAnn(e.target.value)}>
+                                    <option value="">All Types</option>
+                                    <option value="announcement">Announcement</option>
+                                    <option value="event">Event</option>
+                                </select>
+                                <button className="btn btn-primary" onClick={() => navigate('/admin/announcements')} style={{ height: '36px', padding: '0 16px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <Plus size={14} /> New Post
+                                </button>
                             </div>
-                            <div className="emp-list-value">09:30 AM - 06:30 PM</div>
                         </div>
-                        <div className="emp-list-item">
-                            <div className="emp-list-label">
-                                <LogIn size={16} className="color-green" /> Check-In Time
-                            </div>
-                            <div className="emp-list-value color-green">{checkInText}</div>
-                        </div>
-                        <div className="emp-list-item">
-                            <div className="emp-list-label">
-                                <Clock size={16} className="color-blue" /> Current Time
-                            </div>
-                            <div className="emp-list-value color-blue">{formatClock(currentTime)}</div>
-                        </div>
-                        <div className="emp-list-item">
-                            <div className="emp-list-label">
-                                <Hourglass size={16} className="color-purple" /> Hours Worked
-                            </div>
-                            <div className="emp-list-value">{String(hoursWorked).padStart(2, '0')}:{String(minsWorked).padStart(2, '0')} ({hoursWorked} Hour)</div>
-                        </div>
-                        <div className="emp-list-item">
-                            <div className="emp-list-label">
-                                <Hourglass size={16} className="color-orange" style={{ transform: 'rotate(180deg)' }} /> Hours Remaining
-                            </div>
-                            <div className="emp-list-value">{String(remHrs).padStart(2, '0')}:{String(remMins).padStart(2, '0')} ({remHrs} Hours)</div>
-                        </div>
-                        <div className="emp-list-item">
-                            <div className="emp-list-label">
-                                <UserCheck size={16} className="color-emerald" /> Status
-                            </div>
-                            <div className="emp-list-value bg-emerald-light">{statusText}</div>
-                        </div>
-                        <div className="emp-list-item">
-                            <div className="emp-list-label">
-                                <MapPin size={16} className="color-pink" /> Work Location
-                            </div>
-                            <div className="emp-list-value bg-pink-light">{locationText}</div>
+
+                        <div className="emp-overview-list" style={{ flex: 1, overflowY: 'auto' }}>
+                            {announcements.filter(a => filterAnn ? a.type === filterAnn : ['announcement', 'event'].includes(a.type)).filter(a => searchAnn ? (a.title?.toLowerCase().includes(searchAnn.toLowerCase()) || a.content?.toLowerCase().includes(searchAnn.toLowerCase())) : true).slice(0, 5).length > 0 ? (
+                                announcements.filter(a => filterAnn ? a.type === filterAnn : ['announcement', 'event'].includes(a.type)).filter(a => searchAnn ? (a.title?.toLowerCase().includes(searchAnn.toLowerCase()) || a.content?.toLowerCase().includes(searchAnn.toLowerCase())) : true).slice(0, 5).map(item => (
+                                    <div key={item.id} className="emp-list-item" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '8px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%' }}>
+                                            <Newspaper size={16} color="#3B82F6" />
+                                            <div className="emp-list-label" style={{ fontWeight: 600, color: 'var(--text-primary)', flex: 1, textTransform: 'capitalize' }}>{item.title}</div>
+                                            <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                                                {new Date(item.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                                            </div>
+                                        </div>
+                                        <div style={{ fontSize: '13px', color: 'var(--text-secondary)', paddingLeft: '24px' }}>
+                                            {item.content}
+                                        </div>
+                                    </div>
+                                ))
+                            ) : (
+                                <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                                    No announcements right now.
+                                </div>
+                            )}
                         </div>
                     </div>
 
-                    <div className="emp-success-banner">
-                        <CheckCircle size={16} color="#059669" />
-                        <span>You are all set! Keep up your good work.</span>
+                    <div className="emp-overview-panel" style={{ display: 'flex', flexDirection: 'column', height: 'fit-content' }}>
+                        <div className="emp-panel-header">
+                            <h3>🎈 This Month's Birthday Stars</h3>
+                        </div>
+
+                        <div className="emp-overview-list" style={{ flex: 1, overflowY: 'auto' }}>
+                            {announcements.filter(a => a.type === 'birthday').slice(0, 5).length > 0 ? (
+                                announcements.filter(a => a.type === 'birthday').slice(0, 5).map(item => (
+                                    <div key={item.id} className="emp-list-item" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '8px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%' }}>
+                                            <Gift size={16} color="#EC4899" />
+                                            <div className="emp-list-label" style={{ fontWeight: 600, color: 'var(--text-primary)', flex: 1, textTransform: 'capitalize' }}>{item.title}</div>
+                                            <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                                                {new Date(item.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                                            </div>
+                                        </div>
+                                        <div style={{ fontSize: '13px', color: 'var(--text-secondary)', paddingLeft: '24px' }}>
+                                            {item.content}
+                                        </div>
+                                    </div>
+                                ))
+                            ) : (
+                                <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                                    No birthdays this month.
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="emp-success-banner" style={{ background: '#FDF2F8', color: '#BE185D', border: '1px solid #FCE7F3', marginTop: '16px' }}>
+                            <Gift size={16} color="#EC4899" />
+                            <span>Stay updated with team celebrations!</span>
+                        </div>
                     </div>
                 </div>
 
@@ -440,7 +547,7 @@ const AdminDashboard = () => {
                         </div>
                         <div style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 600 }}>{todayStr}</div>
                     </div>
-                    
+
                     <div className="dashboard-overview-grid">
 
                         {/* Present (Office) Column */}
@@ -564,7 +671,7 @@ const AdminDashboard = () => {
                             ))}
                         </div>
                     </div>
-                    
+
                     <div style={{ flex: 1, paddingTop: 16, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                         <ResponsiveContainer width="100%" height={210}>
                             <BarChart data={chartData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
@@ -627,13 +734,147 @@ const AdminDashboard = () => {
                                 <Tooltip cursor={{ fill: 'var(--primary-light)', opacity: 0.5 }} contentStyle={tooltipStyle} />
                                 <Legend iconType="circle" iconSize={9} wrapperStyle={{ fontSize: 12, paddingTop: 12 }} />
                                 <Bar dataKey="Approved" fill="#10B981" radius={[6, 6, 0, 0]} />
-                                <Bar dataKey="Pending"  fill="#F59E0B" radius={[6, 6, 0, 0]} />
+                                <Bar dataKey="Pending" fill="#F59E0B" radius={[6, 6, 0, 0]} />
                                 <Bar dataKey="Rejected" fill="#EF4444" radius={[6, 6, 0, 0]} />
                             </BarChart>
                         </ResponsiveContainer>
                     }
                 </div>
             </div>
+
+            {/* Check Out Modal */}
+            {showCheckoutModal && createPortal(
+                <div
+                    onClick={() => setShowCheckoutModal(false)}
+                    style={{
+                        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex',
+                        alignItems: 'center', justifyContent: 'center', zIndex: 1000,
+                        backdropFilter: 'blur(3px)', animation: 'fadeIn 0.15s ease'
+                    }}
+                >
+                    <div
+                        onClick={e => e.stopPropagation()}
+                        style={{
+                            background: '#fff', borderRadius: 16, boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
+                            width: 'calc(100% - 32px)', maxWidth: 400, display: 'flex', flexDirection: 'column',
+                            overflow: 'hidden', animation: 'slideUp 0.2s ease', padding: 24, textAlign: 'center'
+                        }}
+                    >
+                        <div style={{ width: 48, height: 48, borderRadius: '50%', background: '#FEE2E2', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', color: '#EF4444' }}>
+                            <LogIn size={24} style={{ transform: 'rotate(180deg)' }} />
+                        </div>
+                        <h3 style={{ margin: '0 0 8px', fontSize: '18px', color: '#1A1A2E', fontWeight: 700 }}>Confirm Check Out</h3>
+                        <p style={{ color: '#6B7280', marginBottom: 24, fontSize: '14px', lineHeight: 1.5 }}>
+                            Are you sure you want to check out? This will record your end time for today.
+                        </p>
+                        <div style={{ display: 'flex', justifyContent: 'center', gap: 12 }}>
+                            <button
+                                onClick={confirmCheckOut}
+                                style={{
+                                    flex: 1, padding: '10px 0', borderRadius: 8, border: 'none',
+                                    background: '#EF4444', color: '#fff', fontWeight: 600, cursor: 'pointer', transition: 'background 0.2s'
+                                }}
+                                onMouseOver={e => e.currentTarget.style.background = '#DC2626'}
+                                onMouseOut={e => e.currentTarget.style.background = '#EF4444'}
+                            >
+                                Yes
+                            </button>
+                            <button
+                                onClick={() => setShowCheckoutModal(false)}
+                                style={{
+                                    flex: 1, padding: '10px 0', borderRadius: 8, border: 'none',
+                                    background: '#10B981', color: '#fff', fontWeight: 600, cursor: 'pointer', transition: 'background 0.2s'
+                                }}
+                                onMouseOver={e => e.currentTarget.style.background = '#059669'}
+                                onMouseOut={e => e.currentTarget.style.background = '#10B981'}
+                            >
+                                No
+                            </button>
+                        </div>
+                    </div>
+                </div>,
+                document.body
+            )}
+            {/* Check In Office Selection Modal */}
+            {showCheckInModal && createPortal(
+                <div
+                    onClick={() => setShowCheckInModal(false)}
+                    style={{
+                        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex',
+                        alignItems: 'center', justifyContent: 'center', zIndex: 1000,
+                        backdropFilter: 'blur(3px)', animation: 'fadeIn 0.15s ease'
+                    }}
+                >
+                    <div
+                        onClick={e => e.stopPropagation()}
+                        style={{
+                            background: '#fff', borderRadius: 16, boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
+                            width: 'calc(100% - 32px)', maxWidth: 400, display: 'flex', flexDirection: 'column',
+                            overflow: 'hidden', animation: 'slideUp 0.2s ease', padding: 24, textAlign: 'center'
+                        }}
+                    >
+                        <div style={{ width: 48, height: 48, borderRadius: '50%', background: '#D1FAE5', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', color: '#10B981' }}>
+                            <MapPin size={24} />
+                        </div>
+                        <h3 style={{ margin: '0 0 8px', fontSize: '18px', color: '#1A1A2E', fontWeight: 700 }}>Select Office Location</h3>
+                        <p style={{ color: '#6B7280', marginBottom: 24, fontSize: '14px', lineHeight: 1.5 }}>
+                            Where are you checking in from today?
+                        </p>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                            <button
+                                onClick={() => confirmCheckIn('LearnLike')}
+                                style={{
+                                    width: '100%', padding: '12px 0', borderRadius: 8, border: '1px solid #10B981',
+                                    background: '#F0FDF4', color: '#10B981', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s'
+                                }}
+                                onMouseOver={e => e.currentTarget.style.background = '#D1FAE5'}
+                                onMouseOut={e => e.currentTarget.style.background = '#F0FDF4'}
+                            >
+                                LearnLike Office
+                            </button>
+                            <button
+                                onClick={() => confirmCheckIn('Hicas')}
+                                style={{
+                                    width: '100%', padding: '12px 0', borderRadius: 8, border: '1px solid #3B82F6',
+                                    background: '#EFF6FF', color: '#3B82F6', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s'
+                                }}
+                                onMouseOver={e => e.currentTarget.style.background = '#DBEAFE'}
+                                onMouseOut={e => e.currentTarget.style.background = '#EFF6FF'}
+                            >
+                                HICAS Office
+                            </button>
+                            <button
+                                onClick={() => confirmCheckIn('Work From Home')}
+                                style={{
+                                    width: '100%', padding: '12px 0', borderRadius: 8, border: '1px solid #8B5CF6',
+                                    background: '#F5F3FF', color: '#8B5CF6', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s'
+                                }}
+                                onMouseOver={e => e.currentTarget.style.background = '#EDE9FE'}
+                                onMouseOut={e => e.currentTarget.style.background = '#F5F3FF'}
+                            >
+                                Work From Home
+                            </button>
+                        </div>
+                        <button
+                            onClick={() => setShowCheckInModal(false)}
+                            style={{
+                                marginTop: 16, padding: '8px 0', background: 'transparent', border: 'none',
+                                color: '#6B7280', fontWeight: 600, cursor: 'pointer', fontSize: 13
+                            }}
+                        >
+                            Cancel
+                        </button>
+                    </div>
+                </div>,
+                document.body
+            )}
+
+            {showSelfieModal && (
+                <SelfieCapture 
+                    onConfirm={handleSelfieConfirm} 
+                    onCancel={() => { setShowSelfieModal(false); setPendingCheckInCoords(null); }} 
+                />
+            )}
         </div>
     );
 };

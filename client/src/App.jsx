@@ -64,6 +64,7 @@ const ApplyLeave = lazy(() => import('./pages/employee/ApplyLeave'));
 const LeaveHistory = lazy(() => import('./pages/employee/LeaveHistory'));
 const AssignedTasks = lazy(() => import('./pages/employee/AssignedTasks'));
 const Attendance = lazy(() => import('./pages/employee/Attendance'));
+const EmployeeTimesheets = lazy(() => import('./pages/employee/Timesheets'));
 const Regularization = lazy(() => import('./pages/employee/Regularization'));
 const HolidayCalendar = lazy(() => import('./pages/employee/HolidayCalendar'));
 const Profile = lazy(() => import('./pages/employee/Profile'));
@@ -193,6 +194,7 @@ function App() {
                                 <Route path="/employee/leave-history" element={<LeaveHistory />} />
                                 <Route path="/employee/leave-status" element={<LeaveHistory />} />
                                 <Route path="/employee/attendance" element={<Attendance />} />
+                                <Route path="/employee/timesheets" element={<EmployeeTimesheets />} />
                                 <Route path="/employee/regularization" element={<Regularization />} />
                                 <Route path="/employee/holidays" element={<HolidayCalendar />} />
                                 <Route path="/employee/profile" element={<Profile />} />

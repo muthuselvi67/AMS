@@ -1,134 +1,253 @@
 import React, { useEffect, useState } from 'react';
-import { Calendar, Home, BarChart2, Users, CheckCircle, CalendarDays, Briefcase } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { Users, Calendar, Home, BarChart2, Clock, Hourglass, MapPin, UserCheck, LogIn, CheckCircle, TrendingUp, Gift, Newspaper, Search, Plus } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend, PieChart as RPieChart, Pie, Cell } from 'recharts';
 import api from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import DashboardCalendar from '../../components/ui/DashboardCalendar';
-import {
-    BarChart, Bar, XAxis, YAxis, CartesianGrid,
-    Tooltip, Legend, ResponsiveContainer,
-    PieChart as RPieChart, Pie, Cell,
-    AreaChart, Area
-} from 'recharts';
+import SelfieCapture from '../../components/ui/SelfieCapture';
 
 const HRDashboard = () => {
     const { user } = useAuth();
+    const navigate = useNavigate();
     const [allAttendance, setAllAttendance] = useState([]);
     const [allLeaves, setAllLeaves] = useState([]);
-    const [users, setUsers] = useState([]);
-    const [attendanceRange, setAttendanceRange] = useState('Week'); // Week | Month | Year
+    const [activeTab, setActiveTab] = useState('Week'); // Week, Month, Year
+    const [announcements, setAnnouncements] = useState([]);
+
+    const [todayRecord, setTodayRecord] = useState(null);
+    const [currentTime, setCurrentTime] = useState(new Date());
+    const [showCheckoutModal, setShowCheckoutModal] = useState(false);
+    const [showCheckInModal, setShowCheckInModal] = useState(false);
+    const [showSelfieModal, setShowSelfieModal] = useState(false);
+    const [pendingCheckInCoords, setPendingCheckInCoords] = useState(null);
+    const [searchAnn, setSearchAnn] = useState('');
+    const [filterAnn, setFilterAnn] = useState('');
 
     useEffect(() => {
         const fetchAll = async () => {
             try {
-                const [leavesRes, attsRes, usersRes] = await Promise.all([
+                const [leavesRes, attsRes, todayAttRes, annRes] = await Promise.all([
                     api.get('/leaves'),
                     api.get('/attendance'),
-                    api.get('/users')
+                    api.get('/attendance/today').catch(() => ({ data: { data: { attendance: null } } })),
+                    api.get('/announcements').catch(() => ({ data: { data: { announcements: [] } } }))
                 ]);
                 const leaves = leavesRes.data.data?.leaves || leavesRes.data.data || [];
                 setAllLeaves(leaves);
                 const att = attsRes.data.data || attsRes.data || [];
                 setAllAttendance(Array.isArray(att) ? att : []);
-                setUsers(usersRes.data.data || []);
-            } catch (err) { console.error('Dashboard fetch error:', err); }
+                setTodayRecord(todayAttRes.data.data?.attendance || null);
+                const anns = annRes.data.data?.announcements || [];
+                setAnnouncements(Array.isArray(anns) ? anns : []);
+            } catch (err) {
+                console.error('Dashboard fetch error:', err);
+            }
         };
         fetchAll();
     }, []);
 
+    // Live clock ticker
+    useEffect(() => {
+        const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+        return () => clearInterval(timer);
+    }, []);
+
+    const handleQuickAttendance = async () => {
+        if (todayRecord?.checkIn?.time && !todayRecord?.checkOut?.time) {
+            setShowCheckoutModal(true);
+        } else if (!todayRecord?.checkIn?.time) {
+            setShowCheckInModal(true);
+        }
+    };
+
+    const confirmCheckIn = (officeName) => {
+        let coords;
+        if (officeName === 'Work From Home') {
+            coords = { work_from_home: 1, latitude: 0, longitude: 0, address: 'Work From Home' };
+        } else {
+            coords = officeName === 'Hicas' 
+                ? { latitude: 11.0126179, longitude: 76.9905965, address: 'Hicas' }
+                : { latitude: 10.9984474, longitude: 76.9914006, address: 'LearnLike' };
+        }
+            
+        setPendingCheckInCoords(coords);
+        setShowCheckInModal(false);
+        setShowSelfieModal(true);
+    };
+
+    const handleSelfieConfirm = async (selfieBase64) => {
+        if (!pendingCheckInCoords) return;
+        const payload = { ...pendingCheckInCoords, photo: selfieBase64 };
+        try {
+            await api.post('/attendance/checkin', payload);
+            const res = await api.get('/attendance/today').catch(() => ({ data: { data: { attendance: null } } }));
+            setTodayRecord(res.data.data?.attendance || null);
+            setShowSelfieModal(false);
+            setPendingCheckInCoords(null);
+        } catch (err) {
+            alert(err.response?.data?.message || 'Failed to check in');
+        }
+    };
+
+    const confirmCheckOut = async () => {
+        try {
+            await api.post('/attendance/checkout', { latitude: 10.9984474, longitude: 76.9914006, address: 'LearnLike' });
+            const res = await api.get('/attendance/today').catch(() => ({ data: { data: { attendance: null } } }));
+            setTodayRecord(res.data.data?.attendance || null);
+            setShowCheckoutModal(false);
+        } catch (err) {
+            alert(err.response?.data?.message || 'Failed to check out');
+        }
+    };
 
 
 
-    // Today string
+    // Timezone-safe local today date string (YYYY-MM-DD)
     const localToday = new Date();
     const y = localToday.getFullYear();
-    const mo = String(localToday.getMonth() + 1).padStart(2, '0');
+    const m = String(localToday.getMonth() + 1).padStart(2, '0');
     const d = String(localToday.getDate()).padStart(2, '0');
-    const todayStr = `${y}-${mo}-${d}`;
+    const todayStr = `${y}-${m}-${d}`;
 
     const presentToday = allAttendance.filter(a => a.date === todayStr && !a.work_from_home);
-    const wfhToday     = allAttendance.filter(a => a.date === todayStr && !!a.work_from_home);
-    const leavesToday  = allLeaves.filter(l => {
+    const wfhToday = allAttendance.filter(a => a.date === todayStr && !!a.work_from_home);
+
+    const leavesToday = allLeaves.filter(l => {
         if (l.status !== 'approved') return false;
         const start = l.startDate || l.start_date;
-        const end   = l.endDate   || l.end_date;
+        const end = l.endDate || l.end_date;
         return start <= todayStr && end >= todayStr;
     });
 
-    // ─── Build Attendance Chart Data ───────────────────────────────────
-    const buildAttendanceData = () => {
-        const slots = [];
+    // Compute stats helper
+    const getStatsForDate = (dateStr) => {
+        const atts = allAttendance.filter(a => a.date === dateStr);
+        const present = atts.filter(a => !a.work_from_home && a.status !== 'on-leave').length;
+        const wfh = atts.filter(a => !!a.work_from_home && a.status !== 'on-leave').length;
 
-        if (attendanceRange === 'Week') {
-            // Last 7 days, labelled Sun/Mon…
-            for (let i = 6; i >= 0; i--) {
-                const dt = new Date();
-                dt.setDate(dt.getDate() - i);
-                const dateStr = `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
-                const label = `${dt.getDate()} ${dt.toLocaleString('default', { weekday: 'short' })}`;
-                slots.push({ label, dateStr });
-            }
-        } else if (attendanceRange === 'Month') {
-            // Last 30 days grouped by week number
-            const weeks = {};
-            for (let i = 29; i >= 0; i--) {
-                const dt = new Date();
-                dt.setDate(dt.getDate() - i);
-                const weekNum = Math.ceil(dt.getDate() / 7);
-                const key = `W${weekNum} ${dt.toLocaleString('default', { month: 'short' })}`;
-                if (!weeks[key]) weeks[key] = [];
-                const dateStr = `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
-                weeks[key].push(dateStr);
-            }
-            return Object.entries(weeks).map(([label, dates]) => ({
-                label,
-                Present: allAttendance.filter(a => dates.includes(a.date) && !a.work_from_home).length,
-                WFH:     allAttendance.filter(a => dates.includes(a.date) && !!a.work_from_home).length,
-                Leave:   allLeaves.filter(l => l.status === 'approved' && dates.some(dt => {
-                    const s = l.startDate || l.start_date;
-                    const e = l.endDate   || l.end_date;
-                    return s <= dt && e >= dt;
-                })).length,
-            }));
-        } else {
-            // Year — last 12 months
-            for (let i = 11; i >= 0; i--) {
-                const dt = new Date();
-                dt.setMonth(dt.getMonth() - i);
-                const label = dt.toLocaleString('default', { month: 'short' });
-                const mStr  = `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}`;
-                const present = allAttendance.filter(a => a.date?.startsWith(mStr) && !a.work_from_home).length;
-                const wfh     = allAttendance.filter(a => a.date?.startsWith(mStr) && !!a.work_from_home).length;
-                const leave   = allLeaves.filter(l => l.status === 'approved' && (l.startDate || l.start_date)?.startsWith(mStr)).length;
-                slots.push({ label, Present: present, WFH: wfh, Leave: leave });
-            }
-            return slots;
-        }
+        const leaves = allLeaves.filter(l => {
+            if (l.status !== 'approved') return false;
+            const start = l.startDate || l.start_date;
+            const end = l.endDate || l.end_date;
+            return start <= dateStr && end >= dateStr;
+        }).length;
 
-        return slots.map(({ label, dateStr }) => ({
-            label,
-            Present: allAttendance.filter(a => a.date === dateStr && !a.work_from_home).length,
-            WFH:     allAttendance.filter(a => a.date === dateStr && !!a.work_from_home).length,
-            Leave:   allLeaves.filter(l => {
-                if (l.status !== 'approved') return false;
-                const s = l.startDate || l.start_date;
-                const e = l.endDate   || l.end_date;
-                return s <= dateStr && e >= dateStr;
-            }).length,
-        }));
+        return { present, wfh, leaves };
     };
 
-    const attendanceData = buildAttendanceData();
+    // 1. Week View (Last 7 days)
+    const getWeekData = () => {
+        const data = [];
+        for (let i = 6; i >= 0; i--) {
+            const temp = new Date();
+            temp.setDate(temp.getDate() - i);
+            const curY = temp.getFullYear();
+            const curM = String(temp.getMonth() + 1).padStart(2, '0');
+            const curD = String(temp.getDate()).padStart(2, '0');
+            const dateStr = `${curY}-${curM}-${curD}`;
 
-    // ─── Leave Status Donut ────────────────────────────────────────────
-    const approved  = allLeaves.filter(l => l.status === 'approved').length;
-    const pending   = allLeaves.filter(l => l.status?.startsWith('pending')).length;
-    const rejected  = allLeaves.filter(l => l.status === 'rejected').length;
+            const label = temp.toLocaleDateString([], { weekday: 'short', day: 'numeric' });
+            const stats = getStatsForDate(dateStr);
+            data.push({
+                name: label,
+                Present: stats.present,
+                WFH: stats.wfh,
+                Leave: stats.leaves
+            });
+        }
+        return data;
+    };
+
+    // 2. Month View (Last 4 weeks)
+    const getMonthData = () => {
+        const data = [];
+        for (let i = 3; i >= 0; i--) {
+            const start = new Date();
+            start.setDate(start.getDate() - (i * 7 + 6));
+
+            let totalPresent = 0;
+            let totalWFH = 0;
+            let totalLeaves = 0;
+
+            for (let j = 0; j < 7; j++) {
+                const cur = new Date(start);
+                cur.setDate(cur.getDate() + j);
+                const curY = cur.getFullYear();
+                const curM = String(cur.getMonth() + 1).padStart(2, '0');
+                const curD = String(cur.getDate()).padStart(2, '0');
+                const dateStr = `${curY}-${curM}-${curD}`;
+
+                const stats = getStatsForDate(dateStr);
+                totalPresent += stats.present;
+                totalWFH += stats.wfh;
+                totalLeaves += stats.leaves;
+            }
+
+            const label = `Week -${i}`;
+            data.push({
+                name: i === 0 ? 'This Wk' : label,
+                Present: totalPresent,
+                WFH: totalWFH,
+                Leave: totalLeaves
+            });
+        }
+        return data;
+    };
+
+    // 3. Year View (Last 12 months)
+    const getYearData = () => {
+        const data = [];
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const now = new Date();
+
+        for (let i = 11; i >= 0; i--) {
+            const temp = new Date(now.getFullYear(), now.getMonth() - i, 1);
+            const year = temp.getFullYear();
+            const month = temp.getMonth();
+
+            let totalPresent = 0;
+            let totalWFH = 0;
+            let totalLeaves = 0;
+
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const stats = getStatsForDate(dateStr);
+                totalPresent += stats.present;
+                totalWFH += stats.wfh;
+                totalLeaves += stats.leaves;
+            }
+
+            data.push({
+                name: `${monthNames[month]}`,
+                Present: totalPresent,
+                WFH: totalWFH,
+                Leave: totalLeaves
+            });
+        }
+        return data;
+    };
+
+    const getChartData = () => {
+        if (activeTab === 'Week') return getWeekData();
+        if (activeTab === 'Month') return getMonthData();
+        return getYearData();
+    };
+
+    const chartData = getChartData();
+
+    // ─── Leave Status Donut Data ────────────────────────────────────────────
+    const approved = allLeaves.filter(l => l.status === 'approved').length;
+    const pending = allLeaves.filter(l => l.status?.startsWith('pending')).length;
+    const rejected = allLeaves.filter(l => l.status === 'rejected').length;
     const cancelled = allLeaves.filter(l => l.status === 'cancelled').length;
     const pieData = [
-        { name: 'Approved',  value: approved,  color: '#10B981' },
-        { name: 'Pending',   value: pending,   color: '#F59E0B' },
-        { name: 'Rejected',  value: rejected,  color: '#EF4444' },
+        { name: 'Approved', value: approved, color: '#10B981' },
+        { name: 'Pending', value: pending, color: '#F59E0B' },
+        { name: 'Rejected', value: rejected, color: '#EF4444' },
         { name: 'Cancelled', value: cancelled, color: '#94A3B8' },
     ].filter(e => e.value > 0);
 
@@ -144,7 +263,7 @@ const HRDashboard = () => {
         );
     };
 
-    // ─── Monthly leave trend ───────────────────────────────────────────
+    // ─── Monthly leave trend Data ───────────────────────────────────────────
     const monthlyMap = {};
     allLeaves.forEach(l => {
         const date = l.startDate || l.start_date;
@@ -165,156 +284,386 @@ const HRDashboard = () => {
         fontSize: 12,
     };
 
-    const totalEmployees = users.length;
-    const presentCount = presentToday.length;
-    const presentPercentage = totalEmployees > 0 ? ((presentCount / totalEmployees) * 100).toFixed(2) : 0;
-    const pendingLeaves = allLeaves.filter(l => l.status?.startsWith('pending')).length;
-    const activeDepartments = new Set(users.map(u => u.department).filter(Boolean)).size;
+    const formatTime = (timeStr) => {
+        if (!timeStr) return '--:--';
+        return new Date(timeStr).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    };
+
+    const formatClock = (dateObj) => {
+        return dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    };
+
+    let hoursWorked = 0;
+    let minsWorked = 0;
+    let workPercent = 0;
+
+    if (todayRecord) {
+        if (todayRecord.totalHours) {
+            hoursWorked = Math.floor(todayRecord.totalHours);
+            minsWorked = Math.round((todayRecord.totalHours - hoursWorked) * 60);
+        } else if (todayRecord.checkIn?.time) {
+            const checkInDate = new Date(todayRecord.checkIn.time);
+            const diffMs = currentTime - checkInDate;
+            const diffHrs = diffMs / (1000 * 60 * 60);
+            if (diffHrs > 0) {
+                hoursWorked = Math.floor(diffHrs);
+                minsWorked = Math.round((diffHrs - hoursWorked) * 60);
+            }
+        }
+    }
+
+    let totalFractionalHours = hoursWorked + (minsWorked / 60);
+    workPercent = Math.min(Math.round((totalFractionalHours / 9) * 100), 100);
+
+    let remHrs = Math.max(0, 8 - hoursWorked);
+    let remMins = 0;
+    if (totalFractionalHours < 9) {
+        let totalRem = 9 - totalFractionalHours;
+        remHrs = Math.floor(totalRem);
+        remMins = Math.round((totalRem - remHrs) * 60);
+    }
+
+    const checkInText = todayRecord?.checkIn?.time ? formatTime(todayRecord.checkIn.time) : '--:--';
+    const statusText = todayRecord ? (todayRecord.status || 'present').replace('-', ' ').toUpperCase() : 'ABSENT';
+    const locationText = todayRecord?.is_wfh || todayRecord?.work_from_home ? 'REMOTE' : 'OFFICE';
+    const isLate = todayRecord?.status === 'late';
+    const todayFormatted = currentTime.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
     return (
-        <div className="fade-in">
-
-            {/* Welcome Banner */}
-            <div className="hr-welcome-banner" style={{ flexWrap: 'wrap', gap: '20px' }}>
-                <div style={{ zIndex: 1, flex: '1 1 250px' }}>
-                    <h1 style={{ whiteSpace: 'nowrap' }}>
-                        <span style={{ fontSize: '32px' }}>👋</span> Welcome, {user?.name?.split(' ')[0]}!
-                    </h1>
-                    <p>Here's your leave and attendance overview.</p>
+        <div className="emp-dashboard-container fade-in">
+            {/* Page header */}
+            <div className="emp-dash-header">
+                <div>
+                    <h1 className="emp-dash-title">Welcome, {user?.name?.split(' ')[0]}! <span role="img" aria-label="wave">👋</span></h1>
+                    <p className="emp-dash-subtitle">Here's your attendance summary for today.</p>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'flex-end', gap: '16px', opacity: 0.9, marginTop: '-24px', marginBottom: '-24px', zIndex: 0, flexShrink: 0, marginLeft: 'auto' }}>
-                    {/* Plant SVG */}
-                    <svg width="60" height="80" viewBox="0 0 40 60" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ marginBottom: '10px' }}>
-                        <path d="M20 60C20 60 10 40 10 30C10 20 20 10 20 10C20 10 30 20 30 30C30 40 20 60 20 60Z" fill="#10B981"/>
-                        <path d="M20 60C20 60 5 45 5 35C5 25 10 15 10 15C10 15 25 25 25 35C25 45 20 60 20 60Z" fill="#34D399"/>
-                        <path d="M20 60C20 60 35 45 35 35C35 25 30 15 30 15C30 15 15 25 15 35C15 45 20 60 20 60Z" fill="#059669"/>
-                        <rect x="15" y="50" width="10" height="10" rx="2" fill="#FBBF24"/>
-                    </svg>
-                    {/* Monitor SVG */}
-                    <svg width="140" height="100" viewBox="0 0 100 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <rect x="5" y="10" width="90" height="55" rx="4" fill="#8B5CF6"/>
-                        <rect x="10" y="15" width="80" height="45" fill="#4C1D95"/>
-                        <path d="M40 65L35 80H65L60 65H40Z" fill="#A78BFA"/>
-                        <rect x="30" y="75" width="40" height="5" rx="2" fill="#C4B5FD"/>
-                        <circle cx="90" cy="75" r="5" fill="#8B5CF6"/>
-                        <path d="M92 73V70H96V75H92Z" fill="#A78BFA"/>
-                    </svg>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                    <button
+                        onClick={handleQuickAttendance}
+                        style={{
+                            display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 18px',
+                            fontSize: '13px', fontWeight: 600, border: 'none', borderRadius: '8px',
+                            background: todayRecord?.checkIn?.time && !todayRecord?.checkOut?.time ? '#EF4444' : '#10B981',
+                            color: '#fff', cursor: 'pointer', transition: 'all 0.15s', whiteSpace: 'nowrap'
+                        }}
+                        onMouseOver={e => { e.currentTarget.style.opacity = 0.9; }}
+                        onMouseOut={e => { e.currentTarget.style.opacity = 1; }}
+                    >
+                        {todayRecord?.checkIn?.time && !todayRecord?.checkOut?.time ? 'Check Out' : 'Check In'}
+                    </button>
+                    <button
+                        onClick={() => navigate(user?.role?.toLowerCase() === 'employee' ? '/employee/attendance' : `/${user?.role?.toLowerCase() || 'hr'}/attendance`)}
+                        style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 18px', fontSize: '13px', fontWeight: 600, border: '1px solid var(--primary)', borderRadius: '8px', background: 'var(--bg-white)', color: 'var(--primary)', cursor: 'pointer', transition: 'all 0.15s', whiteSpace: 'nowrap' }}
+                        onMouseOver={e => { e.currentTarget.style.background = 'var(--bg-light)'; }}
+                        onMouseOut={e => { e.currentTarget.style.background = 'var(--bg-white)'; }}
+                    >
+                        <Clock size={16} />
+                        {user?.role?.toLowerCase() === 'employee' ? 'Add Attendance' : 'View Team Attendance'}
+                    </button>
+                    <div className="emp-dash-date-badge">
+                        <Calendar size={15} />
+                        <span>{todayFormatted}</span>
+                    </div>
                 </div>
             </div>
 
-            {/* Calendar */}
-            <div style={{ marginBottom: 24 }}>
-                <DashboardCalendar />
+            {/* Metrics Cards */}
+            <div className="emp-metrics-grid">
+                <div className="emp-metric-card">
+                    <div className="emp-metric-icon bg-blue">
+                        <LogIn size={20} color="#3B82F6" />
+                    </div>
+                    <div className="emp-metric-info">
+                        <span className="emp-metric-label">Check-In Time</span>
+                        <div className="emp-metric-value">{checkInText}</div>
+                        <span className="emp-metric-subtext color-blue">Today</span>
+                    </div>
+                </div>
+
+                <div className="emp-metric-card">
+                    <div className="emp-metric-icon bg-green">
+                        <Clock size={20} color="#10B981" />
+                    </div>
+                    <div className="emp-metric-info">
+                        <span className="emp-metric-label">Current Time</span>
+                        <div className="emp-metric-value">{formatClock(currentTime)}</div>
+                        <span className="emp-metric-subtext color-green">{currentTime.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+                    </div>
+                </div>
+
+                <div className="emp-metric-card">
+                    <div className="emp-metric-icon bg-purple">
+                        <Hourglass size={20} color="#8B5CF6" />
+                    </div>
+                    <div className="emp-metric-info">
+                        <span className="emp-metric-label">Hours Worked</span>
+                        <div className="emp-metric-value">{String(hoursWorked).padStart(2, '0')}:{String(minsWorked).padStart(2, '0')}</div>
+                        <span className="emp-metric-subtext color-purple">{hoursWorked} Hour {minsWorked} Minutes</span>
+                    </div>
+                </div>
+
+                <div className="emp-metric-card">
+                    <div className="emp-metric-icon bg-orange">
+                        <Hourglass size={20} color="#F59E0B" style={{ transform: 'rotate(180deg)' }} />
+                    </div>
+                    <div className="emp-metric-info">
+                        <span className="emp-metric-label">Hours Remaining</span>
+                        <div className="emp-metric-value">{String(remHrs).padStart(2, '0')}:{String(remMins).padStart(2, '0')}</div>
+                        <span className="emp-metric-subtext color-orange">{remHrs} Hours {remMins} Minutes</span>
+                    </div>
+                </div>
+
+                <div className="emp-metric-card">
+                    <div className="emp-metric-icon bg-emerald">
+                        <UserCheck size={20} color="#059669" />
+                    </div>
+                    <div className="emp-metric-info">
+                        <span className="emp-metric-label">Status</span>
+                        <div className="emp-metric-value" style={{ fontSize: '18px' }}>{statusText}</div>
+                        <span className="emp-metric-subtext color-emerald">{isLate ? 'Late Arrival' : (todayRecord ? 'On Time' : 'Not Checked In')}</span>
+                    </div>
+                </div>
+
+                <div className="emp-metric-card">
+                    <div className="emp-metric-icon bg-pink">
+                        <MapPin size={20} color="#EC4899" />
+                    </div>
+                    <div className="emp-metric-info">
+                        <span className="emp-metric-label">Work Location</span>
+                        <div className="emp-metric-value" style={{ fontSize: '18px' }}>{locationText}</div>
+                        <span className="emp-metric-subtext color-pink">{todayRecord?.is_wfh || todayRecord?.work_from_home ? 'Remote Work' : 'Onsite'}</span>
+                    </div>
+                </div>
             </div>
 
-            {/* ── TOP ROW: Today's Overview  +  Attendance Overview Chart ── */}
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24, marginBottom: 24 }}>
+            {/* Progress Bar */}
+            <div className="emp-progress-container">
+                <span className="emp-progress-title">Work Progress</span>
+                <div className="emp-progress-track">
+                    <div className="emp-progress-fill" style={{ width: `${workPercent}%` }}>
+                        <div className="emp-progress-tooltip">{workPercent}%</div>
+                    </div>
+                </div>
+                <span className="emp-progress-text">{Math.floor(totalFractionalHours)} of 9 Hours Completed</span>
+            </div>
 
-                {/* Today's Overview */}
-                <div className="card" style={{ flex: '1 1 300px', display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-                    <div className="card-header" style={{ borderBottom: '1px solid var(--border-light)', paddingBottom: 12, marginBottom: 16 }}>
+            {/* Bottom 2-Column Layout */}
+            <div className="emp-bottom-grid" style={{ marginBottom: '32px' }}>
+                {/* Left Column: Announcements and Birthdays */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', height: '100%', justifyContent: 'space-between' }}>
+                    <div className="emp-overview-panel" style={{ display: 'flex', flexDirection: 'column', height: 'fit-content' }}>
+                        <div className="emp-panel-header" style={{ flexWrap: 'wrap', gap: '10px' }}>
+                            <h3 style={{ width: '100%' }}>Announcements 📢</h3>
+                            <div style={{ display: 'flex', gap: '8px', width: '100%', flexWrap: 'wrap' }}>
+                                <div style={{ position: 'relative', flex: 1, minWidth: '150px' }}>
+                                    <Search size={15} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                                    <input className="form-control" style={{ padding: '0 10px 0 32px', height: '36px', fontSize: '13px' }} placeholder="Search announcements..." value={searchAnn} onChange={e => setSearchAnn(e.target.value)} />
+                                </div>
+                                <select className="form-control" style={{ width: '120px', height: '36px', padding: '0 28px 0 10px', fontSize: '13px' }} value={filterAnn} onChange={e => setFilterAnn(e.target.value)}>
+                                    <option value="">All Types</option>
+                                    <option value="announcement">Announcement</option>
+                                    <option value="event">Event</option>
+                                </select>
+                                <button className="btn btn-primary" onClick={() => navigate('/hr/announcements')} style={{ height: '36px', padding: '0 16px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <Plus size={14} /> New Post
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="emp-overview-list" style={{ flex: 1, overflowY: 'auto' }}>
+                            {announcements.filter(a => filterAnn ? a.type === filterAnn : ['announcement', 'event'].includes(a.type)).filter(a => searchAnn ? (a.title?.toLowerCase().includes(searchAnn.toLowerCase()) || a.content?.toLowerCase().includes(searchAnn.toLowerCase())) : true).slice(0, 5).length > 0 ? (
+                                announcements.filter(a => filterAnn ? a.type === filterAnn : ['announcement', 'event'].includes(a.type)).filter(a => searchAnn ? (a.title?.toLowerCase().includes(searchAnn.toLowerCase()) || a.content?.toLowerCase().includes(searchAnn.toLowerCase())) : true).slice(0, 5).map(item => (
+                                    <div key={item.id} className="emp-list-item" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '8px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%' }}>
+                                            <Newspaper size={16} color="#3B82F6" />
+                                            <div className="emp-list-label" style={{ fontWeight: 600, color: 'var(--text-primary)', flex: 1, textTransform: 'capitalize' }}>{item.title}</div>
+                                            <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                                                {new Date(item.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                                            </div>
+                                        </div>
+                                        <div style={{ fontSize: '13px', color: 'var(--text-secondary)', paddingLeft: '24px' }}>
+                                            {item.content}
+                                        </div>
+                                    </div>
+                                ))
+                            ) : (
+                                <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                                    No announcements right now.
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="emp-overview-panel" style={{ display: 'flex', flexDirection: 'column', height: 'fit-content' }}>
+                        <div className="emp-panel-header">
+                            <h3>🎈 This Month's Birthday Stars</h3>
+                        </div>
+
+                        <div className="emp-overview-list" style={{ flex: 1, overflowY: 'auto' }}>
+                            {announcements.filter(a => a.type === 'birthday').slice(0, 5).length > 0 ? (
+                                announcements.filter(a => a.type === 'birthday').slice(0, 5).map(item => (
+                                    <div key={item.id} className="emp-list-item" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '8px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%' }}>
+                                            <Gift size={16} color="#EC4899" />
+                                            <div className="emp-list-label" style={{ fontWeight: 600, color: 'var(--text-primary)', flex: 1, textTransform: 'capitalize' }}>{item.title}</div>
+                                            <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                                                {new Date(item.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                                            </div>
+                                        </div>
+                                        <div style={{ fontSize: '13px', color: 'var(--text-secondary)', paddingLeft: '24px' }}>
+                                            {item.content}
+                                        </div>
+                                    </div>
+                                ))
+                            ) : (
+                                <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                                    No birthdays this month.
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="emp-success-banner" style={{ background: '#FDF2F8', color: '#BE185D', border: '1px solid #FCE7F3', marginTop: '16px' }}>
+                            <Gift size={16} color="#EC4899" />
+                            <span>Stay updated with team celebrations!</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="emp-calendar-panel">
+                    <DashboardCalendar />
+                </div>
+            </div>
+
+            {/* Team Overview section */}
+            <h2 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '16px' }}>Team Overview</h2>
+
+            {/* Today's Overview + Attendance Graph */}
+            <div className="dashboard-top-row">
+                {/* Today's Overview (Present & On Leave) */}
+                <div className="card" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                    <div className="card-header" style={{ borderBottom: '1px solid #F0F0F0', paddingBottom: 12 }}>
                         <div className="card-title" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <Calendar size={17} /> Today's Overview
+                            <Calendar size={18} /> Today's Overview
                         </div>
                         <div style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 600 }}>{todayStr}</div>
                     </div>
 
                     <div className="dashboard-overview-grid">
-                        {/* Present */}
-                        <div style={{ borderRight: '1px solid var(--border-light)', paddingRight: 12, display: 'flex', flexDirection: 'column' }}>
-                            <span style={{ fontSize: 11, fontWeight: 700, color: '#166534', background: '#DCFCE7', padding: '2px 8px', borderRadius: 12, marginBottom: 12, display: 'inline-block' }}>
-                                Present ({presentToday.length})
-                            </span>
-                            <div style={{ overflowY: 'auto', maxHeight: 200, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                                {presentToday.length === 0
-                                    ? <div style={{ color: 'var(--text-muted)', fontSize: 11, textAlign: 'center', padding: '20px 0' }}>No office check-ins</div>
-                                    : presentToday.map((p, i) => (
-                                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
-                                            <div style={{ width: 22, height: 22, borderRadius: '50%', background: 'linear-gradient(135deg,#1A73E8,#0D47A1)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 9, flexShrink: 0 }}>
-                                                {p.employee?.name?.charAt(0).toUpperCase()}
-                                            </div>
-                                            <div style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 600 }}>{p.employee?.name}</div>
-                                            <span style={{ fontSize: 10, color: '#166534', fontWeight: 700, flexShrink: 0 }}>
-                                                {p.checkIn?.time ? new Date(p.checkIn.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}
-                                            </span>
+
+                        {/* Present (Office) Column */}
+                        <div style={{ borderRight: '1px solid #F0F0F0', paddingRight: 12, display: 'flex', flexDirection: 'column' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
+                                <span style={{ fontSize: 11, fontWeight: 700, color: '#166534', background: '#DCFCE7', padding: '2px 8px', borderRadius: 12 }}>
+                                    Present ({presentToday.length})
+                                </span>
+                            </div>
+                            <div style={{ flex: 1, overflowY: 'auto', maxHeight: 200, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                {presentToday.length === 0 ? (
+                                    <div style={{ color: 'var(--text-muted)', fontSize: 11, textAlign: 'center', padding: '20px 0' }}>No office check-ins</div>
+                                ) : presentToday.map((p, idx) => (
+                                    <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
+                                        <div style={{
+                                            width: 22, height: 22, borderRadius: '50%', marginTop: 1,
+                                            background: 'linear-gradient(135deg, #1A73E8, #0D47A1)', color: '#fff',
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 9, flexShrink: 0
+                                        }}>
+                                            {p.employee?.name?.charAt(0).toUpperCase()}
                                         </div>
-                                    ))
-                                }
+                                        <div style={{ flex: 1 }}>
+                                            <div style={{ fontWeight: 600, fontSize: 12, lineHeight: 1.3 }}>{p.employee?.name}</div>
+                                            <div style={{ fontSize: 10, color: '#166534', fontWeight: 700 }}>
+                                                {p.checkIn?.time ? new Date(p.checkIn.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
                         </div>
 
-                        {/* WFH */}
-                        <div style={{ borderRight: '1px solid var(--border-light)', paddingRight: 12, paddingLeft: 4, display: 'flex', flexDirection: 'column' }}>
-                            <span style={{ fontSize: 11, fontWeight: 700, color: '#5B21B6', background: '#EDE9FE', padding: '2px 8px', borderRadius: 12, marginBottom: 12, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                                <Home size={10} /> WFH ({wfhToday.length})
-                            </span>
-                            <div style={{ overflowY: 'auto', maxHeight: 200, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                                {wfhToday.length === 0
-                                    ? <div style={{ color: 'var(--text-muted)', fontSize: 11, textAlign: 'center', padding: '20px 0' }}>No WFH today</div>
-                                    : wfhToday.map((p, i) => (
-                                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
-                                            <div style={{ width: 22, height: 22, borderRadius: '50%', background: 'linear-gradient(135deg,#7C3AED,#5B21B6)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 9, flexShrink: 0 }}>
-                                                {p.employee?.name?.charAt(0).toUpperCase()}
-                                            </div>
-                                            <div style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 600 }}>{p.employee?.name}</div>
-                                            <span style={{ fontSize: 10, color: '#5B21B6', fontWeight: 700, flexShrink: 0 }}>
-                                                {p.checkIn?.time ? new Date(p.checkIn.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}
-                                            </span>
+                        {/* Work From Home Column */}
+                        <div style={{ borderRight: '1px solid #F0F0F0', paddingRight: 12, paddingLeft: 4, display: 'flex', flexDirection: 'column' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
+                                <span style={{ fontSize: 11, fontWeight: 700, color: '#5B21B6', background: '#EDE9FE', padding: '2px 8px', borderRadius: 12, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                    <Home size={10} /> WFH ({wfhToday.length})
+                                </span>
+                            </div>
+                            <div style={{ flex: 1, overflowY: 'auto', maxHeight: 200, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                {wfhToday.length === 0 ? (
+                                    <div style={{ color: 'var(--text-muted)', fontSize: 11, textAlign: 'center', padding: '20px 0' }}>No WFH today</div>
+                                ) : wfhToday.map((p, idx) => (
+                                    <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
+                                        <div style={{
+                                            width: 22, height: 22, borderRadius: '50%', marginTop: 1,
+                                            background: 'linear-gradient(135deg, #7C3AED, #5B21B6)', color: '#fff',
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 9, flexShrink: 0
+                                        }}>
+                                            {p.employee?.name?.charAt(0).toUpperCase()}
                                         </div>
-                                    ))
-                                }
+                                        <div style={{ flex: 1 }}>
+                                            <div style={{ fontWeight: 600, fontSize: 12, lineHeight: 1.3 }}>{p.employee?.name}</div>
+                                            <div style={{ fontSize: 10, color: '#5B21B6', fontWeight: 700 }}>
+                                                {p.checkIn?.time ? new Date(p.checkIn.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
                         </div>
 
-                        {/* On Leave */}
+                        {/* On Leave Column */}
                         <div style={{ paddingLeft: 4, display: 'flex', flexDirection: 'column' }}>
-                            <span style={{ fontSize: 11, fontWeight: 700, color: '#9A3412', background: '#FFEDD5', padding: '2px 8px', borderRadius: 12, marginBottom: 12, display: 'inline-block' }}>
-                                On Leave ({leavesToday.length})
-                            </span>
-                            <div style={{ overflowY: 'auto', maxHeight: 200, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                                {leavesToday.length === 0
-                                    ? <div style={{ color: 'var(--text-muted)', fontSize: 11, textAlign: 'center', padding: '20px 0' }}>Nobody on leave today</div>
-                                    : leavesToday.map((l, i) => (
-                                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
-                                            <div style={{ width: 22, height: 22, borderRadius: '50%', background: 'linear-gradient(135deg,#AD1457,#6A1B9A)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 9, flexShrink: 0 }}>
-                                                {(l.employee_name || l.employee?.name || 'U').charAt(0).toUpperCase()}
-                                            </div>
-                                            <div style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 600 }}>{l.employee_name || l.employee?.name}</div>
-                                            <span style={{ fontSize: 9, background: l.leave_type_color || l.leaveType?.color || '#1565C0', color: 'white', padding: '1px 5px', borderRadius: 4, fontWeight: 600 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
+                                <span style={{ fontSize: 11, fontWeight: 700, color: '#9A3412', background: '#FFEDD5', padding: '2px 8px', borderRadius: 12 }}>
+                                    On Leave ({leavesToday.length})
+                                </span>
+                            </div>
+                            <div style={{ flex: 1, overflowY: 'auto', maxHeight: 200, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                {leavesToday.length === 0 ? (
+                                    <div style={{ color: 'var(--text-muted)', fontSize: 11, textAlign: 'center', padding: '20px 0' }}>Nobody on leave today</div>
+                                ) : leavesToday.map((l, idx) => (
+                                    <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
+                                        <div style={{
+                                            width: 22, height: 22, borderRadius: '50%', marginTop: 1,
+                                            background: 'linear-gradient(135deg, #AD1457, #6A1B9A)', color: '#fff',
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 9, flexShrink: 0
+                                        }}>
+                                            {(l.employee_name || l.employee?.name || 'U').charAt(0).toUpperCase()}
+                                        </div>
+                                        <div style={{ flex: 1 }}>
+                                            <div style={{ fontWeight: 600, fontSize: 12, lineHeight: 1.3 }}>{l.employee_name || l.employee?.name}</div>
+                                            <span style={{ fontSize: 9, background: l.leave_type_color || l.leaveType?.color || '#1565C0', color: 'white', padding: '1px 5px', borderRadius: 4, fontWeight: 600, marginTop: 2, display: 'inline-block' }}>
                                                 {l.leave_type_name || l.leaveType?.name || 'Leave'}
                                             </span>
                                         </div>
-                                    ))
-                                }
+                                    </div>
+                                ))}
                             </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Attendance Overview Chart */}
-                <div className="card" style={{ flex: '1.4 1 300px', display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-                    <div className="card-header" style={{ borderBottom: '1px solid var(--border-light)', paddingBottom: 12, marginBottom: 16 }}>
-                        <div className="card-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <BarChart2 size={17} style={{ color: 'var(--primary)' }} />
-                            Attendance Overview
+                {/* Attendance Graph replacing Recent Leave Requests */}
+                <div className="card" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                    <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #F0F0F0', paddingBottom: 12 }}>
+                        <div className="card-title" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <BarChart2 size={18} /> Attendance Overview
                         </div>
-                        {/* Week / Month / Year tabs */}
-                        <div style={{ display: 'flex', gap: 4, background: 'var(--bg-light)', borderRadius: 8, padding: 3 }}>
+                        <div style={{ display: 'flex', gap: 4, background: '#F3F4F6', padding: 2, borderRadius: 8 }}>
                             {['Week', 'Month', 'Year'].map(tab => (
                                 <button
                                     key={tab}
-                                    onClick={() => setAttendanceRange(tab)}
+                                    onClick={() => setActiveTab(tab)}
                                     style={{
+                                        border: 'none',
+                                        background: activeTab === tab ? '#fff' : 'transparent',
+                                        color: activeTab === tab ? 'var(--text-color)' : '#6B7280',
                                         padding: '4px 12px',
                                         borderRadius: 6,
                                         fontSize: 12,
                                         fontWeight: 600,
-                                        border: 'none',
                                         cursor: 'pointer',
-                                        transition: 'all 0.2s',
-                                        background: attendanceRange === tab ? 'var(--bg-white)' : 'transparent',
-                                        color: attendanceRange === tab ? 'var(--primary)' : 'var(--text-muted)',
-                                        boxShadow: attendanceRange === tab ? 'var(--shadow-sm)' : 'none',
+                                        boxShadow: activeTab === tab ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                                        transition: 'all 0.2s'
                                     }}
                                 >
                                     {tab}
@@ -322,31 +671,26 @@ const HRDashboard = () => {
                             ))}
                         </div>
                     </div>
-                    <ResponsiveContainer width="100%" height={220}>
-                        <BarChart data={attendanceData} barSize={14} barCategoryGap="35%" margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="var(--border-light)" vertical={false} />
-                            <XAxis dataKey="label" tick={{ fontSize: 11, fill: 'var(--text-muted)', fontWeight: 600 }} axisLine={false} tickLine={false} />
-                            <YAxis allowDecimals={false} tick={{ fontSize: 10, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false} />
-                            <Tooltip
-                                cursor={{ fill: 'var(--primary-light)', opacity: 0.5 }}
-                                contentStyle={tooltipStyle}
-                            />
-                            <Legend
-                                iconType="circle"
-                                iconSize={8}
-                                wrapperStyle={{ fontSize: 12, paddingTop: 12 }}
-                            />
-                            <Bar dataKey="Present" fill="#10B981" radius={[5, 5, 0, 0]} />
-                            <Bar dataKey="WFH"     fill="#9B7CFD" radius={[5, 5, 0, 0]} />
-                            <Bar dataKey="Leave"   fill="#EF4444" radius={[5, 5, 0, 0]} />
-                        </BarChart>
-                    </ResponsiveContainer>
+
+                    <div style={{ flex: 1, paddingTop: 16, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                        <ResponsiveContainer width="100%" height={210}>
+                            <BarChart data={chartData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" />
+                                <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#6B7280' }} axisLine={false} tickLine={false} />
+                                <YAxis tick={{ fontSize: 10, fill: '#6B7280' }} axisLine={false} tickLine={false} allowDecimals={false} />
+                                <Tooltip contentStyle={{ background: '#fff', border: '1px solid #E5E7EB', borderRadius: 8, fontSize: 12 }} />
+                                <Legend verticalAlign="top" height={36} iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11 }} />
+                                <Bar dataKey="Present" fill="#10B981" radius={[4, 4, 0, 0]} />
+                                <Bar dataKey="WFH" fill="#8B5CF6" radius={[4, 4, 0, 0]} />
+                                <Bar dataKey="Leave" fill="#EF4444" radius={[4, 4, 0, 0]} />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
                 </div>
             </div>
 
-            {/* ── SECOND ROW: Leave Status Donut  +  Monthly Leave Trends ── */}
+            {/* Leave Charts */}
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24, marginBottom: 24 }}>
-
                 {/* Donut — Leave Status */}
                 <div className="card" style={{ flex: '1 1 300px', padding: '24px', minWidth: 0 }}>
                     <div className="card-header" style={{ marginBottom: 12 }}>
@@ -390,7 +734,7 @@ const HRDashboard = () => {
                                 <Tooltip cursor={{ fill: 'var(--primary-light)', opacity: 0.5 }} contentStyle={tooltipStyle} />
                                 <Legend iconType="circle" iconSize={9} wrapperStyle={{ fontSize: 12, paddingTop: 12 }} />
                                 <Bar dataKey="Approved" fill="#10B981" radius={[6, 6, 0, 0]} />
-                                <Bar dataKey="Pending"  fill="#F59E0B" radius={[6, 6, 0, 0]} />
+                                <Bar dataKey="Pending" fill="#F59E0B" radius={[6, 6, 0, 0]} />
                                 <Bar dataKey="Rejected" fill="#EF4444" radius={[6, 6, 0, 0]} />
                             </BarChart>
                         </ResponsiveContainer>
@@ -398,8 +742,142 @@ const HRDashboard = () => {
                 </div>
             </div>
 
+            {/* Check Out Modal */}
+            {showCheckoutModal && createPortal(
+                <div
+                    onClick={() => setShowCheckoutModal(false)}
+                    style={{
+                        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex',
+                        alignItems: 'center', justifyContent: 'center', zIndex: 1000,
+                        backdropFilter: 'blur(3px)', animation: 'fadeIn 0.15s ease'
+                    }}
+                >
+                    <div
+                        onClick={e => e.stopPropagation()}
+                        style={{
+                            background: '#fff', borderRadius: 16, boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
+                            width: 'calc(100% - 32px)', maxWidth: 400, display: 'flex', flexDirection: 'column',
+                            overflow: 'hidden', animation: 'slideUp 0.2s ease', padding: 24, textAlign: 'center'
+                        }}
+                    >
+                        <div style={{ width: 48, height: 48, borderRadius: '50%', background: '#FEE2E2', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', color: '#EF4444' }}>
+                            <LogIn size={24} style={{ transform: 'rotate(180deg)' }} />
+                        </div>
+                        <h3 style={{ margin: '0 0 8px', fontSize: '18px', color: '#1A1A2E', fontWeight: 700 }}>Confirm Check Out</h3>
+                        <p style={{ color: '#6B7280', marginBottom: 24, fontSize: '14px', lineHeight: 1.5 }}>
+                            Are you sure you want to check out? This will record your end time for today.
+                        </p>
+                        <div style={{ display: 'flex', justifyContent: 'center', gap: 12 }}>
+                            <button
+                                onClick={confirmCheckOut}
+                                style={{
+                                    flex: 1, padding: '10px 0', borderRadius: 8, border: 'none',
+                                    background: '#EF4444', color: '#fff', fontWeight: 600, cursor: 'pointer', transition: 'background 0.2s'
+                                }}
+                                onMouseOver={e => e.currentTarget.style.background = '#DC2626'}
+                                onMouseOut={e => e.currentTarget.style.background = '#EF4444'}
+                            >
+                                Yes
+                            </button>
+                            <button
+                                onClick={() => setShowCheckoutModal(false)}
+                                style={{
+                                    flex: 1, padding: '10px 0', borderRadius: 8, border: 'none',
+                                    background: '#10B981', color: '#fff', fontWeight: 600, cursor: 'pointer', transition: 'background 0.2s'
+                                }}
+                                onMouseOver={e => e.currentTarget.style.background = '#059669'}
+                                onMouseOut={e => e.currentTarget.style.background = '#10B981'}
+                            >
+                                No
+                            </button>
+                        </div>
+                    </div>
+                </div>,
+                document.body
+            )}
+            {/* Check In Office Selection Modal */}
+            {showCheckInModal && createPortal(
+                <div
+                    onClick={() => setShowCheckInModal(false)}
+                    style={{
+                        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex',
+                        alignItems: 'center', justifyContent: 'center', zIndex: 1000,
+                        backdropFilter: 'blur(3px)', animation: 'fadeIn 0.15s ease'
+                    }}
+                >
+                    <div
+                        onClick={e => e.stopPropagation()}
+                        style={{
+                            background: '#fff', borderRadius: 16, boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
+                            width: 'calc(100% - 32px)', maxWidth: 400, display: 'flex', flexDirection: 'column',
+                            overflow: 'hidden', animation: 'slideUp 0.2s ease', padding: 24, textAlign: 'center'
+                        }}
+                    >
+                        <div style={{ width: 48, height: 48, borderRadius: '50%', background: '#D1FAE5', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', color: '#10B981' }}>
+                            <MapPin size={24} />
+                        </div>
+                        <h3 style={{ margin: '0 0 8px', fontSize: '18px', color: '#1A1A2E', fontWeight: 700 }}>Select Office Location</h3>
+                        <p style={{ color: '#6B7280', marginBottom: 24, fontSize: '14px', lineHeight: 1.5 }}>
+                            Where are you checking in from today?
+                        </p>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                            <button
+                                onClick={() => confirmCheckIn('LearnLike')}
+                                style={{
+                                    width: '100%', padding: '12px 0', borderRadius: 8, border: '1px solid #10B981',
+                                    background: '#F0FDF4', color: '#10B981', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s'
+                                }}
+                                onMouseOver={e => e.currentTarget.style.background = '#D1FAE5'}
+                                onMouseOut={e => e.currentTarget.style.background = '#F0FDF4'}
+                            >
+                                LearnLike Office
+                            </button>
+                            <button
+                                onClick={() => confirmCheckIn('Hicas')}
+                                style={{
+                                    width: '100%', padding: '12px 0', borderRadius: 8, border: '1px solid #3B82F6',
+                                    background: '#EFF6FF', color: '#3B82F6', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s'
+                                }}
+                                onMouseOver={e => e.currentTarget.style.background = '#DBEAFE'}
+                                onMouseOut={e => e.currentTarget.style.background = '#EFF6FF'}
+                            >
+                                HICAS Office
+                            </button>
+                            <button
+                                onClick={() => confirmCheckIn('Work From Home')}
+                                style={{
+                                    width: '100%', padding: '12px 0', borderRadius: 8, border: '1px solid #8B5CF6',
+                                    background: '#F5F3FF', color: '#8B5CF6', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s'
+                                }}
+                                onMouseOver={e => e.currentTarget.style.background = '#EDE9FE'}
+                                onMouseOut={e => e.currentTarget.style.background = '#F5F3FF'}
+                            >
+                                Work From Home
+                            </button>
+                        </div>
+                        <button
+                            onClick={() => setShowCheckInModal(false)}
+                            style={{
+                                marginTop: 16, padding: '8px 0', background: 'transparent', border: 'none',
+                                color: '#6B7280', fontWeight: 600, cursor: 'pointer', fontSize: 13
+                            }}
+                        >
+                            Cancel
+                        </button>
+                    </div>
+                </div>,
+                document.body
+            )}
+
+            {showSelfieModal && (
+                <SelfieCapture 
+                    onConfirm={handleSelfieConfirm} 
+                    onCancel={() => { setShowSelfieModal(false); setPendingCheckInCoords(null); }} 
+                />
+            )}
         </div>
     );
 };
 
 export default HRDashboard;
+
