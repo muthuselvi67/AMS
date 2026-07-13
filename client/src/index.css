@@ -513,7 +513,7 @@ textarea {
   text-transform: uppercase;
 }
 
-.sidebar.collapsed .sidebar-logo-text {
+.sidebar.collapsed:not(.mobile-open) .sidebar-logo-text {
   max-width: 0;
   opacity: 0;
   margin-left: 0;
@@ -547,7 +547,7 @@ textarea {
   transition: max-height var(--transition), padding var(--transition), opacity var(--transition);
 }
 
-.sidebar.collapsed .sidebar-section-title {
+.sidebar.collapsed:not(.mobile-open) .sidebar-section-title {
   max-height: 0;
   padding-top: 0;
   padding-bottom: 0;
@@ -555,11 +555,11 @@ textarea {
   pointer-events: none;
 }
 
-.sidebar.collapsed .sidebar-section {
+.sidebar.collapsed:not(.mobile-open) .sidebar-section {
   margin-bottom: 0;
 }
 
-.sidebar.collapsed .sidebar-link {
+.sidebar.collapsed:not(.mobile-open) .sidebar-link {
   justify-content: center;
   padding: 10px;
   gap: 0;
@@ -626,13 +626,13 @@ textarea {
   transition: max-width var(--transition), padding var(--transition), opacity var(--transition);
 }
 
-.sidebar.collapsed .sidebar-link-label {
+.sidebar.collapsed:not(.mobile-open) .sidebar-link-label {
   max-width: 0;
   opacity: 0;
   pointer-events: none;
 }
 
-.sidebar.collapsed .sidebar-link-badge {
+.sidebar.collapsed:not(.mobile-open) .sidebar-link-badge {
   max-width: 0;
   padding: 0;
   opacity: 0;

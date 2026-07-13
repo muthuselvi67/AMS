@@ -11,9 +11,10 @@ const MySalarySlips = () => {
     const fetchPayrolls = async () => {
         try {
             const res = await api.get('/payroll/my-slips');
-            setPayrolls(res.data);
+            const records = Array.isArray(res.data) ? res.data : (res.data?.data ?? []);
+            setPayrolls(records);
         } catch (error) {
-            toast.error('Failed to fetch salary slips');
+            toast.error(error.response?.data?.message || 'Failed to fetch salary slips');
         } finally {
             setLoading(false);
         }

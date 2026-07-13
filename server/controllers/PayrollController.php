@@ -40,9 +40,9 @@ class PayrollController {
                 $this->generatePayroll();
             } elseif ($this->id === 'all' && $this->requestMethod === 'GET') {
                 $this->getAllPayrolls();
-            } elseif ($this->id && $this->subId === 'status' && $this->requestMethod === 'PATCH') {
+            } elseif ($this->id && $this->subId === 'status' && ($this->requestMethod === 'PATCH' || $this->requestMethod === 'PUT')) {
                 $this->updateStatus();
-            } elseif ($this->id && $this->subId === 'amount' && $this->requestMethod === 'PATCH') {
+            } elseif ($this->id && $this->subId === 'amount' && ($this->requestMethod === 'PATCH' || $this->requestMethod === 'PUT')) {
                 $this->updateAmount();
             } else {
                 Response::json(false, "Not Found", null, 404);
@@ -59,41 +59,43 @@ class PayrollController {
                   WHERE p.user_id = :user_id
                   ORDER BY p.year DESC, p.month DESC";
         
-        $stmt = $this->db->prepare($query);
-        $stmt->execute(['user_id' => $userId]);
-        
-        $results = [];
-        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-            $results[] = [
-                'id' => $row['id'],
-                'userId' => [
-                    'id' => $row['user_id'],
-                    'name' => $row['name'],
-                    'employeeId' => $row['employee_id'],
-                    'position' => $row['position']
-                ],
-                'month' => (int)$row['month'],
-                'year' => (int)$row['year'],
-                'baseSalary' => (float)$row['base_salary'],
-                'allowances' => [
-                    'hra' => (float)$row['allowance_hra'],
-                    'transport' => (float)$row['allowance_transport'],
-                    'other' => (float)$row['allowance_other']
-                ],
-                'deductions' => [
-                    'pf' => (float)$row['deduction_pf'],
-                    'tax' => (float)$row['deduction_tax'],
-                    'lop' => (float)$row['deduction_lop']
-                ],
-                'netSalary' => (float)$row['net_salary'],
-                'status' => $row['status'],
-                'paidAt' => $row['paid_at']
-            ];
-        }
+        try {
+            $stmt = $this->db->prepare($query);
+            $stmt->execute([':user_id' => $userId]);
+            
+            $results = [];
+            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                $results[] = [
+                    'id' => $row['id'],
+                    'userId' => [
+                        'id' => $row['user_id'],
+                        'name' => $row['name'],
+                        'employeeId' => $row['employee_id'],
+                        'position' => $row['position']
+                    ],
+                    'month' => (int)$row['month'],
+                    'year' => (int)$row['year'],
+                    'baseSalary' => (float)$row['base_salary'],
+                    'allowances' => [
+                        'hra' => (float)$row['allowance_hra'],
+                        'transport' => (float)$row['allowance_transport'],
+                        'other' => (float)$row['allowance_other']
+                    ],
+                    'deductions' => [
+                        'pf' => (float)$row['deduction_pf'],
+                        'tax' => (float)$row['deduction_tax'],
+                        'lop' => (float)($row['deduction_lop'] ?? 0)
+                    ],
+                    'netSalary' => (float)$row['net_salary'],
+                    'status' => $row['status'],
+                    'paidAt' => $row['paid_at']
+                ];
+            }
 
-        header('Content-Type: application/json; charset=utf-8');
-        echo json_encode($results);
-        exit();
+            Response::json(true, 'Fetched successfully', $results);
+        } catch (PDOException $e) {
+            Response::json(false, 'Database error: ' . $e->getMessage(), null, 500);
+        }
     }
 
     private function generatePayroll() {
@@ -157,41 +159,43 @@ class PayrollController {
                   JOIN users u ON p.user_id = u.id 
                   WHERE p.month = :month AND p.year = :year";
         
-        $stmt = $this->db->prepare($query);
-        $stmt->execute(['month' => $month, 'year' => $year]);
-        
-        $results = [];
-        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-            $results[] = [
-                'id' => $row['id'],
-                'userId' => [
-                    'id' => $row['user_id'],
-                    'name' => $row['name'],
-                    'employeeId' => $row['employee_id'],
-                    'position' => $row['position']
-                ],
-                'month' => (int)$row['month'],
-                'year' => (int)$row['year'],
-                'baseSalary' => (float)$row['base_salary'],
-                'allowances' => [
-                    'hra' => (float)$row['allowance_hra'],
-                    'transport' => (float)$row['allowance_transport'],
-                    'other' => (float)$row['allowance_other']
-                ],
-                'deductions' => [
-                    'pf' => (float)$row['deduction_pf'],
-                    'tax' => (float)$row['deduction_tax'],
-                    'lop' => (float)$row['deduction_lop']
-                ],
-                'netSalary' => (float)$row['net_salary'],
-                'status' => $row['status'],
-                'paidAt' => $row['paid_at']
-            ];
-        }
+        try {
+            $stmt = $this->db->prepare($query);
+            $stmt->execute([':month' => $month, ':year' => $year]);
+            
+            $results = [];
+            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                $results[] = [
+                    'id' => $row['id'],
+                    'userId' => [
+                        'id' => $row['user_id'],
+                        'name' => $row['name'],
+                        'employeeId' => $row['employee_id'],
+                        'position' => $row['position']
+                    ],
+                    'month' => (int)$row['month'],
+                    'year' => (int)$row['year'],
+                    'baseSalary' => (float)$row['base_salary'],
+                    'allowances' => [
+                        'hra' => (float)$row['allowance_hra'],
+                        'transport' => (float)$row['allowance_transport'],
+                        'other' => (float)$row['allowance_other']
+                    ],
+                    'deductions' => [
+                        'pf' => (float)$row['deduction_pf'],
+                        'tax' => (float)$row['deduction_tax'],
+                        'lop' => (float)($row['deduction_lop'] ?? 0)
+                    ],
+                    'netSalary' => (float)$row['net_salary'],
+                    'status' => $row['status'],
+                    'paidAt' => $row['paid_at']
+                ];
+            }
 
-        header('Content-Type: application/json; charset=utf-8');
-        echo json_encode($results);
-        exit();
+            Response::json(true, 'Fetched successfully', $results);
+        } catch (PDOException $e) {
+            Response::json(false, 'Database error: ' . $e->getMessage(), null, 500);
+        }
     }
 
     private function updateStatus() {

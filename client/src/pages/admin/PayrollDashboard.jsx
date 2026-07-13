@@ -20,9 +20,11 @@ const PayrollDashboard = () => {
         setLoading(true);
         try {
             const res = await api.get('/payroll/all', { params: { month, year } });
-            setPayrolls(res.data);
+            // Handle both wrapped response {data: [...]} and raw array []
+            const records = Array.isArray(res.data) ? res.data : (res.data?.data ?? []);
+            setPayrolls(records);
         } catch (error) {
-            toast.error('Failed to fetch payroll records');
+            toast.error(error.response?.data?.message || 'Failed to fetch payroll records');
         } finally {
             setLoading(false);
         }
@@ -49,11 +51,11 @@ const PayrollDashboard = () => {
 
     const updateStatus = async (id, status) => {
         try {
-            await api.patch(`/payroll/${id}/status`, { status });
+            await api.put(`/payroll/${id}/status`, { status });
             toast.success(`Marked as ${status}`);
             fetchPayrolls();
         } catch (error) {
-            toast.error('Update failed');
+            toast.error(error.response?.data?.message || 'Update failed');
         }
     };
 
@@ -93,7 +95,7 @@ const PayrollDashboard = () => {
     const saveEdit = async () => {
         setSaving(true);
         try {
-            await api.patch(`/payroll/${editId}/amount`, {
+            await api.put(`/payroll/${editId}/amount`, {
                 baseSalary: editForm.baseSalary,
                 allowances: { hra: editForm.hra, transport: editForm.transport, other: editForm.other },
                 deductions: { pf: editForm.pf, tax: editForm.tax, lop: editForm.lop },
