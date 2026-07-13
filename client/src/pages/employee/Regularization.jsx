@@ -3,12 +3,14 @@ import api from '../../api/axios';
 import toast from 'react-hot-toast';
 import { Plus, X, Clock, Calendar, AlertCircle } from 'lucide-react';
 import Modal from '../../components/ui/Modal';
+import { useNavigate } from 'react-router-dom';
 
 const Regularization = () => {
+    const navigate = useNavigate();
     const [requests, setRequests] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    
+    const [regType, setRegType] = useState('check_in');
     const [formData, setFormData] = useState({
         date: '',
         check_in_time: '',
@@ -52,11 +54,18 @@ const Regularization = () => {
         }
 
         // Add dummy date to time to form datetime if times are provided
+        const now = new Date();
+        const currentTimeStr = now.toTimeString().split(' ')[0].substring(0, 5);
+        const autoCheckOut = now.getHours() >= 18 ? '18:00' : currentTimeStr;
+        
+        const checkInVal = regType === 'check_in' ? currentTimeStr : '';
+        const checkOutVal = regType === 'check_out' ? autoCheckOut : '';
+
         const payload = {
             date: formData.date,
             reason: formData.reason,
-            check_in_time: formData.check_in_time ? `${formData.date} ${formData.check_in_time}:00` : null,
-            check_out_time: formData.check_out_time ? `${formData.date} ${formData.check_out_time}:00` : null,
+            check_in_time: checkInVal ? `${formData.date} ${checkInVal}:00` : null,
+            check_out_time: checkOutVal ? `${formData.date} ${checkOutVal}:00` : null,
         };
 
         setSubmitting(true);
@@ -64,9 +73,16 @@ const Regularization = () => {
             const res = await api.post('/regularization', payload);
             if (res.data.status || res.data.success) {
                 toast.success('Regularization request submitted successfully');
-                setIsModalOpen(false);
-                setFormData({ date: '', check_in_time: '', check_out_time: '', reason: '' });
-                fetchRequests();
+                
+                // If they submitted a check-in request for today, redirect to dashboard to actually complete the check-in selfie/location
+                const isToday = formData.date === new Date().toISOString().split('T')[0];
+                if (regType === 'check_in' && isToday) {
+                    navigate('/employee/dashboard?open_checkin=1');
+                } else {
+                    setIsModalOpen(false);
+                    fetchRequests();
+                    setFormData({ date: '', check_in_time: '', check_out_time: '', reason: '' });
+                }
             }
         } catch (error) {
             toast.error(error.response?.data?.message || 'Failed to submit request');
@@ -113,10 +129,9 @@ const Regularization = () => {
                         const todayDate = now.toISOString().split('T')[0];
                         const currentTime = now.toTimeString().split(' ')[0].substring(0, 5);
                         const isCheckOut = now.getHours() >= 16;
+                        setRegType(isCheckOut ? 'check_out' : 'check_in');
                         setFormData({
                             date: todayDate,
-                            check_in_time: isCheckOut ? '' : currentTime,
-                            check_out_time: isCheckOut ? currentTime : '',
                             reason: ''
                         });
                         setIsModalOpen(true);
@@ -203,39 +218,34 @@ const Regularization = () => {
                             max={new Date().toISOString().split('T')[0]}
                             value={formData.date}
                             onChange={handleInputChange}
-                            style={{ width: '100%', padding: '10px 14px', border: '1px solid var(--border)', borderRadius: '8px', outline: 'none', background: '#F3F4F6', color: 'var(--text-secondary)', fontFamily: 'inherit', cursor: 'not-allowed' }}
+                            style={{ width: '100%', padding: '10px 14px', border: '1px solid var(--border)', borderRadius: '8px', outline: 'none', background: 'var(--bg-light)', color: 'var(--text-secondary)', fontFamily: 'inherit', cursor: 'not-allowed' }}
                         />
                     </div>
                     
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                         <div>
-                            <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '4px' }}>Check In Time</label>
-                            <input 
-                                type="time" 
-                                name="check_in_time"
-                                value={formData.check_in_time}
-                                readOnly
-                                onChange={handleInputChange}
-                                style={{ width: '100%', padding: '10px 14px', border: '1px solid var(--border)', borderRadius: '8px', outline: 'none', background: '#F3F4F6', color: 'var(--text-secondary)', fontFamily: 'inherit', cursor: 'not-allowed' }}
-                            />
+                            <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '4px' }}>Request Type <span style={{color: 'var(--danger)'}}>*</span></label>
+                            <select 
+                                value={regType}
+                                onChange={(e) => setRegType(e.target.value)}
+                                style={{ width: '100%', padding: '10px 14px', border: '1px solid var(--border)', borderRadius: '8px', outline: 'none', background: 'var(--bg-white)', color: 'var(--text-primary)', fontFamily: 'inherit' }}
+                            >
+                                <option value="check_in">Missed Check In</option>
+                                <option value="check_out">Missed Check Out</option>
+                            </select>
                         </div>
                         <div>
-                            <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '4px' }}>Check Out Time</label>
+                            <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '4px' }}>Time (Auto-Filled)</label>
                             <input 
                                 type="time" 
-                                name="check_out_time"
-                                value={formData.check_out_time}
+                                value={regType === 'check_in' ? new Date().toTimeString().split(' ')[0].substring(0, 5) : (new Date().getHours() >= 18 ? '18:00' : new Date().toTimeString().split(' ')[0].substring(0, 5))}
                                 readOnly
-                                onChange={handleInputChange}
-                                style={{ width: '100%', padding: '10px 14px', border: '1px solid var(--border)', borderRadius: '8px', outline: 'none', background: '#F3F4F6', color: 'var(--text-secondary)', fontFamily: 'inherit', cursor: 'not-allowed' }}
+                                style={{ width: '100%', padding: '10px 14px', border: '1px solid var(--border)', borderRadius: '8px', outline: 'none', background: 'var(--bg-light)', color: 'var(--text-secondary)', fontFamily: 'inherit', cursor: 'not-allowed' }}
                             />
                         </div>
                     </div>
                     
-                    <div style={{ background: 'var(--primary-light)', border: '1px solid var(--border-light)', borderRadius: '8px', padding: '12px', display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
-                        <AlertCircle style={{ color: 'var(--primary)', flexShrink: 0 }} size={18} />
-                        <p style={{ fontSize: '0.8rem', color: 'var(--text-primary)', margin: 0, lineHeight: 1.4 }}>Leave Check In or Check Out blank if you only missed one of them.</p>
-                    </div>
+
 
                     <div>
                         <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '4px' }}>Reason <span style={{color: 'var(--danger)'}}>*</span></label>

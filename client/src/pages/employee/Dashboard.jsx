@@ -57,6 +57,16 @@ const EmployeeDashboard = () => {
         return () => clearInterval(timer);
     }, []);
 
+    // Check for query param to open check-in directly (used after submitting late regularization)
+    useEffect(() => {
+        const searchParams = new URLSearchParams(window.location.search);
+        if (searchParams.get('open_checkin') === '1') {
+            setShowCheckInModal(true);
+            // Clean up the URL so it doesn't reopen on refresh
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+    }, []);
+
     const handleQuickAttendance = async () => {
         if (todayRecord?.checkIn?.time && !todayRecord?.checkOut?.time) {
             setShowCheckInModal(true);
