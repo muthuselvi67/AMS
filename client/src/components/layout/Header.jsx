@@ -147,6 +147,8 @@ const Header = ({ onMenuClick }) => {
             } else {
                 navigate(`/employee/directory`);
             }
+        } else if (n.type === 'attendance') {
+            navigate(`${prefix}/regularization`);
         }
     };
 
@@ -256,14 +258,6 @@ const Header = ({ onMenuClick }) => {
                         <button className="header-btn" onClick={() => navigate(-1)} title="Go back">
                             <ChevronLeft size={20} />
                         </button>
-                    )}
-                    {pageInfo.title !== 'Learnlike' && (
-                        <>
-                            <div className="header-title-text" style={{ minWidth: 0 }}>
-                                <h2>{pageInfo.title}</h2>
-                                <p>{pageInfo.sub}</p>
-                            </div>
-                        </>
                     )}
                 </div>
                 <div className="header-actions">

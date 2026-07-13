@@ -3663,6 +3663,8 @@ textarea.form-control {
   justify-content: space-between;
   align-items: flex-start;
   margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 16px;
 }
 
 .emp-dash-title {
@@ -3690,6 +3692,7 @@ textarea.form-control {
   font-weight: 600;
   font-size: 0.85rem;
   box-shadow: var(--shadow-sm);
+  white-space: nowrap;
 }
 
 .emp-metrics-grid {

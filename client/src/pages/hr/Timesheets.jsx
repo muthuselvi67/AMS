@@ -7,33 +7,56 @@ import toast from 'react-hot-toast';
 const HRTimesheets = () => {
     const { user } = useAuth();
     const [timesheets, setTimesheets] = useState([]);
+    const [employees, setEmployees] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
 
-    const fetchTimesheets = async () => {
+    const fetchData = async () => {
         setLoading(true);
         try {
-            const { data } = await api.get('/timesheets/all');
-            setTimesheets(data.data?.timesheets || []);
+            const [timesheetsRes, usersRes] = await Promise.all([
+                api.get('/timesheets/all'),
+                api.get('/users')
+            ]);
+            setTimesheets(timesheetsRes.data.data?.timesheets || []);
+            setEmployees(usersRes.data.data || []);
         } catch { 
-            toast.error('Failed to load timesheets'); 
+            toast.error('Failed to load data'); 
         } finally { 
             setLoading(false); 
         }
     };
 
     useEffect(() => {
-        fetchTimesheets();
+        fetchData();
     }, []);
 
     const handleStatusUpdate = async (id, status) => {
         try {
             await api.put(`/timesheets/status/${id}`, { status });
             toast.success(`Timesheet ${status} successfully`);
-            fetchTimesheets();
+            fetchData();
         } catch {
             toast.error('Failed to update status');
         }
+    };
+
+    const getFormattedTotal = (ts) => {
+        let displayHours = parseFloat(ts.total_hours || 0);
+        const lowerTask = (ts.task || '').toLowerCase();
+        if (lowerTask.includes('break') || lowerTask.includes('lunch')) {
+            if (ts.time_in && ts.time_out) {
+                const start = new Date(`2000-01-01T${ts.time_in}`);
+                const end = new Date(`2000-01-01T${ts.time_out}`);
+                let diffMs = end - start;
+                if (diffMs < 0) diffMs += 24 * 60 * 60 * 1000;
+                displayHours = Math.floor(diffMs / 60000) / 60;
+            }
+        }
+        const totalMinutes = Math.round(displayHours * 60);
+        const h = Math.floor(totalMinutes / 60);
+        const m = totalMinutes % 60;
+        return `${h}h ${m.toString().padStart(2, '0')}m`;
     };
 
     const filtered = timesheets.filter(ts => 
@@ -43,6 +66,37 @@ const HRTimesheets = () => {
 
     const pendingCount = timesheets.filter(t => t.status === 'pending').length;
 
+    const d = new Date();
+    const todayStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const todaysTimesheets = timesheets.filter(ts => ts.date && ts.date.startsWith(todayStr));
+    const submittedUserIdsString = new Set(todaysTimesheets.map(ts => String(ts.user_id)));
+
+    const activeEmployees = employees.filter(e => (Number(e.isActive) === 1 || e.isActive === true || e.isActive === '1') && (e.role || '').toLowerCase() === 'employee');
+    const submittedList = activeEmployees.filter(e => submittedUserIdsString.has(String(e.id)));
+    const notSubmittedList = activeEmployees.filter(e => !submittedUserIdsString.has(String(e.id)));
+
+    const getEmployeeTotalHours = (empId) => {
+        const empTimesheets = todaysTimesheets.filter(ts => String(ts.user_id) === String(empId));
+        let totalMins = 0;
+        empTimesheets.forEach(ts => {
+            let displayHours = parseFloat(ts.total_hours || 0);
+            const lowerTask = (ts.task || '').toLowerCase();
+            if (lowerTask.includes('break') || lowerTask.includes('lunch')) {
+                if (ts.time_in && ts.time_out) {
+                    const start = new Date(`2000-01-01T${ts.time_in}`);
+                    const end = new Date(`2000-01-01T${ts.time_out}`);
+                    let diffMs = end - start;
+                    if (diffMs < 0) diffMs += 24 * 60 * 60 * 1000;
+                    displayHours = Math.floor(diffMs / 60000) / 60;
+                }
+            }
+            totalMins += Math.round(displayHours * 60);
+        });
+        const h = Math.floor(totalMins / 60);
+        const m = totalMins % 60;
+        return `${h}h ${m.toString().padStart(2, '0')}m`;
+    };
+
     return (
         <div className="fade-in">
             <div className="page-header">
@@ -50,16 +104,51 @@ const HRTimesheets = () => {
                 <p>Review and approve employee daily timesheets</p>
             </div>
 
-            <div className="stats-grid" style={{ marginBottom: 20 }}>
-                <div className="card stat-card">
-                    <div className="stat-icon" style={{ background: '#EFF6FF', color: '#3B82F6' }}><Clock size={20} /></div>
-                    <div className="stat-value">{timesheets.length}</div>
-                    <div className="stat-label">Total Submissions</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '24px' }}>
+                <div className="card" style={{ padding: '20px' }}>
+                    <h3 style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10B981' }}></span>
+                        Submitted Today ({submittedList.length})
+                    </h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '200px', overflowY: 'auto', paddingRight: '8px' }}>
+                        {submittedList.length === 0 ? (
+                            <div style={{ fontSize: '13px', color: 'var(--text-muted)', fontStyle: 'italic' }}>No submissions yet today.</div>
+                        ) : (
+                            submittedList.map(emp => (
+                                <div key={emp.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', background: '#F8F9FB', borderRadius: '8px' }}>
+                                    <div>
+                                        <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                                            {emp.name} <span style={{ color: 'var(--text-muted)', fontWeight: 'normal', fontSize: '12px', marginLeft: '4px' }}>({getEmployeeTotalHours(emp.id)})</span>
+                                        </div>
+                                        <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{emp.department || 'Employee'}</div>
+                                    </div>
+                                    <CheckCircle size={16} color="#10B981" />
+                                </div>
+                            ))
+                        )}
+                    </div>
                 </div>
-                <div className="card stat-card">
-                    <div className="stat-icon" style={{ background: '#FEF3C7', color: '#D97706' }}><Clock size={20} /></div>
-                    <div className="stat-value">{pendingCount}</div>
-                    <div className="stat-label">Pending Approval</div>
+
+                <div className="card" style={{ padding: '20px' }}>
+                    <h3 style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#F59E0B' }}></span>
+                        Pending Submission ({notSubmittedList.length})
+                    </h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '200px', overflowY: 'auto', paddingRight: '8px' }}>
+                        {notSubmittedList.length === 0 ? (
+                            <div style={{ fontSize: '13px', color: 'var(--text-muted)', fontStyle: 'italic' }}>Everyone has submitted today!</div>
+                        ) : (
+                            notSubmittedList.map(emp => (
+                                <div key={emp.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', background: '#FFFBEB', borderRadius: '8px', border: '1px solid #FEF3C7' }}>
+                                    <div>
+                                        <div style={{ fontSize: '13px', fontWeight: 600, color: '#92400E' }}>{emp.name}</div>
+                                        <div style={{ fontSize: '11px', color: '#B45309' }}>{emp.department || 'Employee'}</div>
+                                    </div>
+                                    <Clock size={16} color="#F59E0B" />
+                                </div>
+                            ))
+                        )}
+                    </div>
                 </div>
             </div>
 
@@ -90,13 +179,11 @@ const HRTimesheets = () => {
                                 <th>Break</th>
                                 <th>Lunch</th>
                                 <th>Total Hrs</th>
-                                <th>Status</th>
-                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {loading ? Array(5).fill(0).map((_, i) => <tr key={i}>{Array(10).fill(0).map((_, j) => <td key={j}><div className="skeleton skeleton-text" /></td>)}</tr>) :
-                                filtered.length === 0 ? <tr><td colSpan={10}><div className="empty-state"><h3>No timesheets found</h3></div></td></tr> :
+                            {loading ? Array(5).fill(0).map((_, i) => <tr key={i}>{Array(8).fill(0).map((_, j) => <td key={j}><div className="skeleton skeleton-text" /></td>)}</tr>) :
+                                filtered.length === 0 ? <tr><td colSpan={8}><div className="empty-state"><h3>No timesheets found</h3></div></td></tr> :
                                     filtered.map(ts => (
                                         <tr key={ts.id}>
                                             <td style={{ fontSize: 13, whiteSpace: 'nowrap' }}>{new Date(ts.date).toLocaleDateString('en-IN')}</td>
@@ -109,24 +196,7 @@ const HRTimesheets = () => {
                                             <td style={{ fontSize: 13 }}>{ts.time_out ? ts.time_out.substring(0,5) : '--:--'}</td>
                                             <td style={{ fontSize: 13 }}>{ts.break_duration}m</td>
                                             <td style={{ fontSize: 13 }}>{ts.lunch_duration}m</td>
-                                            <td style={{ fontWeight: 700, fontSize: 13 }}>{parseFloat(ts.total_hours).toFixed(2)}h</td>
-                                            <td>
-                                                {ts.status === 'approved' ? <span className="badge badge-approved"><span className="badge-dot" />Approved</span> :
-                                                 ts.status === 'rejected' ? <span className="badge badge-rejected"><span className="badge-dot" />Rejected</span> :
-                                                 <span className="badge badge-pending"><span className="badge-dot" />Pending</span>}
-                                            </td>
-                                            <td>
-                                                {ts.status === 'pending' && (
-                                                    <div style={{ display: 'flex', gap: 6 }}>
-                                                        <button className="btn btn-primary btn-sm btn-icon" onClick={() => handleStatusUpdate(ts.id, 'approved')} title="Approve">
-                                                            <CheckCircle size={14} />
-                                                        </button>
-                                                        <button className="btn btn-danger btn-sm btn-icon" onClick={() => handleStatusUpdate(ts.id, 'rejected')} title="Reject">
-                                                            <XCircle size={14} />
-                                                        </button>
-                                                    </div>
-                                                )}
-                                            </td>
+                                            <td style={{ fontWeight: 700, fontSize: 13 }}>{getFormattedTotal(ts)}</td>
                                         </tr>
                                     ))}
                         </tbody>

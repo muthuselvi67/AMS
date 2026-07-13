@@ -44,6 +44,7 @@ class NotificationController {
         $userId = $this->user['id'];
 
         $this->generateBirthdayNotifications();
+        $this->generateAttendanceReminders();
 
         $query = "SELECT * FROM notifications WHERE recipient_id = :recipient_id ORDER BY created_at DESC";
         $stmt = $this->db->prepare($query);
@@ -65,6 +66,65 @@ class NotificationController {
         }
 
         Response::json(true, "Notifications fetched successfully", ['notifications' => $notifications], 200);
+    }
+
+    private function generateAttendanceReminders() {
+        date_default_timezone_set('Asia/Kolkata');
+        $today = date('Y-m-d');
+        $now = date('H:i:s');
+
+        // 1. Check-in Reminder (Time is 10:00:00 or later)
+        if ($now >= '10:00:00') {
+            $query = "SELECT id, name FROM users 
+                      WHERE is_active = 1 
+                      AND id NOT IN (SELECT employee_id FROM attendances WHERE date = :today)
+                      AND id NOT IN (
+                          SELECT employee_id FROM leave_requests 
+                          WHERE :today2 BETWEEN start_date AND end_date AND status = 'approved'
+                      )";
+            
+            $stmt = $this->db->prepare($query);
+            $stmt->execute([':today' => $today, ':today2' => $today]);
+            $employees = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            foreach ($employees as $emp) {
+                $title = "Check-in Reminder";
+                $checkNotif = $this->db->prepare("SELECT id FROM notifications WHERE recipient_id = :uid AND title = :title AND DATE(created_at) = :today LIMIT 1");
+                $checkNotif->execute([':uid' => $emp['id'], ':title' => $title, ':today' => $today]);
+
+                if ($checkNotif->rowCount() == 0) {
+                    $msg = "not check in";
+                    $insert = $this->db->prepare("INSERT INTO notifications (recipient_id, title, message, type, related_id, related_model, is_read, created_at, updated_at) VALUES (:uid, :title, :msg, 'attendance', 0, 'attendances', 0, NOW(), NOW())");
+                    $insert->execute([':uid' => $emp['id'], ':title' => $title, ':msg' => $msg]);
+                }
+            }
+        }
+
+        // 2. Check-out Reminder (Time is 18:00:00 or later)
+        if ($now >= '18:00:00') {
+            $query = "SELECT a.id as attendance_id, u.id as employee_id, u.name 
+                      FROM attendances a
+                      JOIN users u ON a.employee_id = u.id
+                      WHERE a.date = :today 
+                      AND a.check_out_time IS NULL
+                      AND u.is_active = 1";
+            
+            $stmt = $this->db->prepare($query);
+            $stmt->execute([':today' => $today]);
+            $attendances = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            foreach ($attendances as $att) {
+                $title = "Check-out Reminder";
+                $checkNotif = $this->db->prepare("SELECT id FROM notifications WHERE recipient_id = :uid AND title = :title AND DATE(created_at) = :today LIMIT 1");
+                $checkNotif->execute([':uid' => $att['employee_id'], ':title' => $title, ':today' => $today]);
+
+                if ($checkNotif->rowCount() == 0) {
+                    $msg = "not check out";
+                    $insert = $this->db->prepare("INSERT INTO notifications (recipient_id, title, message, type, related_id, related_model, is_read, created_at, updated_at) VALUES (:uid, :title, :msg, 'attendance', :related_id, 'attendances', 0, NOW(), NOW())");
+                    $insert->execute([':uid' => $att['employee_id'], ':title' => $title, ':msg' => $msg, ':related_id' => $att['attendance_id']]);
+                }
+            }
+        }
     }
 
     private function generateBirthdayNotifications() {

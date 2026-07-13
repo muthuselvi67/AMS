@@ -108,7 +108,19 @@ const Regularization = () => {
                 <div 
                     className="emp-dash-date-badge" 
                     style={{ cursor: 'pointer', background: 'var(--primary)', color: 'white', border: 'none' }}
-                    onClick={() => setIsModalOpen(true)}
+                    onClick={() => {
+                        const now = new Date();
+                        const todayDate = now.toISOString().split('T')[0];
+                        const currentTime = now.toTimeString().split(' ')[0].substring(0, 5);
+                        const isCheckOut = now.getHours() >= 16;
+                        setFormData({
+                            date: todayDate,
+                            check_in_time: isCheckOut ? '' : currentTime,
+                            check_out_time: isCheckOut ? currentTime : '',
+                            reason: ''
+                        });
+                        setIsModalOpen(true);
+                    }}
                 >
                     <Plus size={16} />
                     <span>New Request</span>
@@ -134,9 +146,11 @@ const Regularization = () => {
                             <thead>
                                 <tr style={{ borderBottom: '1px solid var(--border-light)', backgroundColor: 'var(--bg-light)' }}>
                                     <th style={{ padding: '16px 20px', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Date</th>
+                                    <th style={{ padding: '16px 20px', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Employee</th>
                                     <th style={{ padding: '16px 20px', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Requested In</th>
                                     <th style={{ padding: '16px 20px', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Requested Out</th>
                                     <th style={{ padding: '16px 20px', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Reason</th>
+                                    <th style={{ padding: '16px 20px', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Notified To</th>
                                     <th style={{ padding: '16px 20px', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Status</th>
                                     <th style={{ padding: '16px 20px', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>HR Remark</th>
                                 </tr>
@@ -148,6 +162,9 @@ const Regularization = () => {
                                             {new Date(request.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
                                         </td>
                                         <td style={{ padding: '16px 20px', whiteSpace: 'nowrap', fontSize: '14px', color: 'var(--text-secondary)' }}>
+                                            {request.employee?.name || '-'}
+                                        </td>
+                                        <td style={{ padding: '16px 20px', whiteSpace: 'nowrap', fontSize: '14px', color: 'var(--text-secondary)' }}>
                                             {request.check_in_time ? new Date(request.check_in_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-'}
                                         </td>
                                         <td style={{ padding: '16px 20px', whiteSpace: 'nowrap', fontSize: '14px', color: 'var(--text-secondary)' }}>
@@ -155,6 +172,9 @@ const Regularization = () => {
                                         </td>
                                         <td style={{ padding: '16px 20px', fontSize: '14px', color: 'var(--text-secondary)', maxWidth: '200px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={request.reason}>
                                             {request.reason}
+                                        </td>
+                                        <td style={{ padding: '16px 20px', whiteSpace: 'nowrap', fontSize: '14px', color: 'var(--text-secondary)' }}>
+                                            Admin & HR
                                         </td>
                                         <td style={{ padding: '16px 20px', whiteSpace: 'nowrap' }}>
                                             {getStatusBadge(request.status)}
@@ -174,15 +194,16 @@ const Regularization = () => {
             <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="New Regularization Request">
                 <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                     <div>
-                        <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '4px' }}>Date</label>
+                        <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '4px' }}>Date <span style={{color: 'var(--danger)'}}>*</span></label>
                         <input 
                             type="date" 
                             name="date"
                             required
+                            readOnly
                             max={new Date().toISOString().split('T')[0]}
                             value={formData.date}
                             onChange={handleInputChange}
-                            style={{ width: '100%', padding: '10px 14px', border: '1px solid var(--border)', borderRadius: '8px', outline: 'none', background: 'var(--bg-white)', color: 'var(--text-primary)', fontFamily: 'inherit' }}
+                            style={{ width: '100%', padding: '10px 14px', border: '1px solid var(--border)', borderRadius: '8px', outline: 'none', background: '#F3F4F6', color: 'var(--text-secondary)', fontFamily: 'inherit', cursor: 'not-allowed' }}
                         />
                     </div>
                     
@@ -193,8 +214,9 @@ const Regularization = () => {
                                 type="time" 
                                 name="check_in_time"
                                 value={formData.check_in_time}
+                                readOnly
                                 onChange={handleInputChange}
-                                style={{ width: '100%', padding: '10px 14px', border: '1px solid var(--border)', borderRadius: '8px', outline: 'none', background: 'var(--bg-white)', color: 'var(--text-primary)', fontFamily: 'inherit' }}
+                                style={{ width: '100%', padding: '10px 14px', border: '1px solid var(--border)', borderRadius: '8px', outline: 'none', background: '#F3F4F6', color: 'var(--text-secondary)', fontFamily: 'inherit', cursor: 'not-allowed' }}
                             />
                         </div>
                         <div>
@@ -203,8 +225,9 @@ const Regularization = () => {
                                 type="time" 
                                 name="check_out_time"
                                 value={formData.check_out_time}
+                                readOnly
                                 onChange={handleInputChange}
-                                style={{ width: '100%', padding: '10px 14px', border: '1px solid var(--border)', borderRadius: '8px', outline: 'none', background: 'var(--bg-white)', color: 'var(--text-primary)', fontFamily: 'inherit' }}
+                                style={{ width: '100%', padding: '10px 14px', border: '1px solid var(--border)', borderRadius: '8px', outline: 'none', background: '#F3F4F6', color: 'var(--text-secondary)', fontFamily: 'inherit', cursor: 'not-allowed' }}
                             />
                         </div>
                     </div>
@@ -215,7 +238,7 @@ const Regularization = () => {
                     </div>
 
                     <div>
-                        <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '4px' }}>Reason</label>
+                        <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '4px' }}>Reason <span style={{color: 'var(--danger)'}}>*</span></label>
                         <textarea 
                             name="reason"
                             required

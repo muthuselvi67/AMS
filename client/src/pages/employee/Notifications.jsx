@@ -82,6 +82,8 @@ const Notifications = () => {
             } else {
                 navigate(`/employee/directory`);
             }
+        } else if (n.type === 'attendance') {
+            navigate(`${prefix}/regularization`);
         }
     };
 

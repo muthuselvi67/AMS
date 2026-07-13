@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { Search, MapPin, Clock, Home, Calendar } from 'lucide-react';
 import api, { getServerUrl } from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
@@ -180,8 +181,9 @@ const AttendanceRecords = () => {
     });
 
     return (
-        <div className="fade-in">
-            <div className="page-header">
+        <>
+            <div className="fade-in">
+                <div className="page-header">
                 <h1>{user?.role === 'hr' ? 'HRMS: Attendance' : 'Attendance Records'}</h1>
                 <p>{user?.role === 'hr' ? 'Track and monitor employee attendance logs' : 'View and filter all employee check-in/check-out records'}</p>
             </div>
@@ -488,9 +490,10 @@ const AttendanceRecords = () => {
                     </div>
                 </>
             )}
+            </div>
 
             {/* ── Selfie Lightbox Modal ── */}
-            {selfieModal && (
+            {selfieModal && createPortal(
                 <div
                     onClick={() => setSelfieModal(null)}
                     style={{
@@ -616,9 +619,10 @@ const AttendanceRecords = () => {
                             }}
                         >⬇ Download Photo</a>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
-        </div>
+        </>
     );
 };
 

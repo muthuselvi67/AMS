@@ -30,8 +30,10 @@ const RegularizationRequests = () => {
 
     const handleAction = async (id, status) => {
         try {
-            // Optional: could prompt for a remark here. Hardcoding empty for now.
-            const res = await api.put(`/regularization/${id}`, { status, hr_remark: '' });
+            const remark = window.prompt(`Enter remark for this ${status} action (optional):`);
+            if (remark === null) return; // Cancelled
+            
+            const res = await api.put(`/regularization/${id}`, { status, hr_remark: remark });
             if (res.data.status || res.data.success) {
                 toast.success(`Request ${status} successfully`);
                 fetchRequests();
@@ -98,35 +100,39 @@ const RegularizationRequests = () => {
                 })}
             </div>
 
-            {loading ? (
-                <div className="flex justify-center items-center h-64">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-                </div>
-            ) : requests.length === 0 ? (
-                <div className="card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 24px', textAlign: 'center' }}>
-                    <div style={{ color: 'var(--text-muted)', marginBottom: '16px' }}>
-                        <Calendar size={48} />
-                    </div>
-                    <h3 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '8px' }}>No requests found</h3>
-                    <p style={{ color: 'var(--text-secondary)' }}>There are no regularization requests matching the selected filter.</p>
-                </div>
-            ) : (
-                <div className="card" style={{ padding: 0 }}>
-                    <div className="table-container">
-                        <table>
-                            <thead>
+            <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+                <div className="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Employee</th>
+                                <th style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Date</th>
+                                <th style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Requested In</th>
+                                <th style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Requested Out</th>
+                                <th style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Reason</th>
+                                <th style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Status</th>
+                                <th style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {loading ? (
                                 <tr>
-                                    <th>Employee</th>
-                                    <th>Date</th>
-                                    <th>Requested In</th>
-                                    <th>Requested Out</th>
-                                    <th>Reason</th>
-                                    <th>Status</th>
-                                    <th>Actions</th>
+                                    <td colSpan={7}>
+                                        <div className="flex justify-center items-center h-64">
+                                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                                        </div>
+                                    </td>
                                 </tr>
-                            </thead>
-                            <tbody>
-                                {requests.map(request => (
+                            ) : requests.length === 0 ? (
+                                Array.from({ length: 10 }).map((_, rowIndex) => (
+                                    <tr key={`empty-${rowIndex}`}>
+                                        {Array.from({ length: 7 }).map((_, colIndex) => (
+                                            <td key={colIndex} style={{ height: '48px', border: '1px solid var(--border-light)' }}>&nbsp;</td>
+                                        ))}
+                                    </tr>
+                                ))
+                            ) : (
+                                requests.map(request => (
                                     <tr key={request.id}>
                                         <td>
                                             <div className="table-avatar">
@@ -181,12 +187,12 @@ const RegularizationRequests = () => {
                                             )}
                                         </td>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+                                ))
+                            )}
+                        </tbody>
+                    </table>
                 </div>
-            )}
+            </div>
         </div>
     );
 };

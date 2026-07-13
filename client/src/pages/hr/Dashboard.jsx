@@ -56,10 +56,15 @@ const HRDashboard = () => {
     }, []);
 
     const handleQuickAttendance = async () => {
+        const prefix = user?.role?.toLowerCase() === 'employee' ? '/employee' : `/${user?.role?.toLowerCase()}`;
         if (todayRecord?.checkIn?.time && !todayRecord?.checkOut?.time) {
-            setShowCheckoutModal(true);
-        } else if (!todayRecord?.checkIn?.time) {
             setShowCheckInModal(true);
+        } else if (!todayRecord?.checkIn?.time) {
+            if (currentTime.getHours() >= 10) {
+                navigate(`${prefix}/my-regularization`);
+            } else {
+                setShowCheckInModal(true);
+            }
         }
     };
 
@@ -82,13 +87,20 @@ const HRDashboard = () => {
         if (!pendingCheckInCoords) return;
         const payload = { ...pendingCheckInCoords, photo: selfieBase64 };
         try {
-            await api.post('/attendance/checkin', payload);
-            const res = await api.get('/attendance/today').catch(() => ({ data: { data: { attendance: null } } }));
-            setTodayRecord(res.data.data?.attendance || null);
+            const endpoint = todayRecord?.checkIn?.time ? '/attendance/checkout' : '/attendance/checkin';
+            await api.post(endpoint, payload);
+            const attsRes = await api.get('/attendance');
+            const att = attsRes.data.data || attsRes.data || [];
+            const localToday = new Date();
+            const y = localToday.getFullYear();
+            const m = String(localToday.getMonth() + 1).padStart(2, '0');
+            const d = String(localToday.getDate()).padStart(2, '0');
+            const todayStr = `${y}-${m}-${d}`;
+            setTodayRecord(att.find(a => a.date === todayStr) || null);
             setShowSelfieModal(false);
             setPendingCheckInCoords(null);
         } catch (err) {
-            alert(err.response?.data?.message || 'Failed to check in');
+            alert(err.response?.data?.message || 'Failed to submit attendance');
         }
     };
 
@@ -337,7 +349,7 @@ const HRDashboard = () => {
                     <h1 className="emp-dash-title">Welcome, {user?.name?.split(' ')[0]}! <span role="img" aria-label="wave">👋</span></h1>
                     <p className="emp-dash-subtitle">Here's your attendance summary for today.</p>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
                     <button
                         onClick={handleQuickAttendance}
                         style={{
@@ -816,9 +828,9 @@ const HRDashboard = () => {
                         <div style={{ width: 48, height: 48, borderRadius: '50%', background: '#D1FAE5', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', color: '#10B981' }}>
                             <MapPin size={24} />
                         </div>
-                        <h3 style={{ margin: '0 0 8px', fontSize: '18px', color: '#1A1A2E', fontWeight: 700 }}>Select Office Location</h3>
+                        <h3 style={{ margin: '0 0 8px', fontSize: '18px', color: '#1A1A2E', fontWeight: 700 }}>Select {todayRecord?.checkIn?.time ? 'Check Out' : 'Check In'} Location</h3>
                         <p style={{ color: '#6B7280', marginBottom: 24, fontSize: '14px', lineHeight: 1.5 }}>
-                            Where are you checking in from today?
+                            Where are you checking {todayRecord?.checkIn?.time ? 'out' : 'in'} from today?
                         </p>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                             <button

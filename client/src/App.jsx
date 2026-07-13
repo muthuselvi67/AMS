@@ -127,6 +127,7 @@ function App() {
                                 <Route path="/admin/leave-types" element={<LeaveTypes />} />
                                 <Route path="/admin/attendance" element={<AttendanceRecords />} />
                                 <Route path="/admin/regularization" element={<AdminRegularizationRequests />} />
+                                <Route path="/admin/my-regularization" element={<Regularization />} />
                                 <Route path="/admin/timesheets" element={<AdminTimesheets />} />
                                 <Route path="/admin/my-attendance" element={<Attendance />} />
                                 <Route path="/admin/holidays" element={<Holidays />} />
@@ -157,6 +158,7 @@ function App() {
                                 <Route path="/hr/leave-types" element={<HRLeaveTypes />} />
                                 <Route path="/hr/attendance" element={<HRAttendanceRecords />} />
                                 <Route path="/hr/regularization" element={<HRRegularizationRequests />} />
+                                <Route path="/hr/my-regularization" element={<Regularization />} />
                                 <Route path="/hr/timesheets" element={<HRTimesheets />} />
                                 <Route path="/hr/my-attendance" element={<Attendance />} />
                                 <Route path="/hr/holidays" element={<HRHolidays />} />
