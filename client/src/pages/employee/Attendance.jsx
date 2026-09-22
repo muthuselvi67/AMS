@@ -139,6 +139,17 @@ const Attendance = () => {
             .catch(() => { }); // silently ignore on initial page load
     }, []);
 
+    useEffect(() => {
+        if (showLocSelectModal || showSelfie || selfieViewModal) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = '';
+        }
+        return () => {
+            document.body.style.overflow = '';
+        };
+    }, [showLocSelectModal, showSelfie, selfieViewModal]);
+
     const today = new Date().toLocaleDateString('en-IN', {
         weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
     });

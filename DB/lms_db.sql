@@ -2161,8 +2161,97 @@ ALTER TABLE `users`
 --
 -- Constraints for table `wfh_updates`
 --
-ALTER TABLE `wfh_updates`
-  ADD CONSTRAINT `wfh_updates_ibfk_1` FOREIGN KEY (`attendance_id`) REFERENCES `attendances` (`id`) ON DELETE CASCADE;
+--
+-- Table structure for table `green_events`
+--
+CREATE TABLE IF NOT EXISTS `green_events` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `event_name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `category` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `description` text COLLATE utf8mb4_unicode_ci,
+  `location` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT 'Main Office Campus',
+  `event_date` date NOT NULL,
+  `start_time` time NOT NULL,
+  `end_time` time NOT NULL,
+  `organizer` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT 'Sustainability Cell',
+  `max_participants` int DEFAULT '50',
+  `current_participants` int DEFAULT '0',
+  `status` enum('Upcoming','Ongoing','Completed','Cancelled') COLLATE utf8mb4_unicode_ci DEFAULT 'Upcoming',
+  `created_by` int DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `created_by` (`created_by`),
+  CONSTRAINT `green_events_ibfk_1` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `green_events`
+--
+INSERT INTO `green_events` (`id`, `event_name`, `category`, `description`, `location`, `event_date`, `start_time`, `end_time`, `organizer`, `max_participants`, `current_participants`, `status`) VALUES
+(1, 'Workplace Women Safety & Self-Defense Workshop', 'Women Safety', 'Interactive session on workplace physical safety, awareness tactics, emergency SOS features, and helpline support.', 'Auditorium Hall A & Live Stream', '2026-10-05', '10:00:00', '12:30:00', 'Women Safety Cell', 80, 15, 'Upcoming'),
+(2, 'Annual Campus Tree Plantation Drive 2026', 'Environmental Problems', 'Join us to plant 500+ saplings across green tech park grounds! Saplings, equipment, and organic snacks provided.', 'Green Tech Park East Grounds', '2026-10-12', '09:00:00', '13:00:00', 'Eco Sustainability Club', 60, 24, 'Ongoing'),
+(3, 'E-Waste & Electronics Recycling Collection', 'Environmental Problems', 'Bring old laptops, batteries, chargers, and unused gadgets for certified eco-friendly safe recycling.', 'Building B Lobby Station', '2026-10-18', '10:00:00', '16:00:00', 'Facilities & IT Dept', 50, 18, 'Upcoming'),
+(4, 'Community Mentorship & Digital Literacy Drive', 'Community Activities', 'Volunteering drive with local school students for digital literacy training and book donation.', 'City Community Youth Center', '2026-09-15', '14:00:00', '17:00:00', 'CSR & Employee Volunteering Desk', 40, 40, 'Completed');
+
+--
+-- Table structure for table `employee_event_participations`
+--
+CREATE TABLE IF NOT EXISTS `employee_event_participations` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `employee_id` int NOT NULL,
+  `event_id` int NOT NULL,
+  `registration_date` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `participation_status` enum('Registered','Completed','Cancelled') COLLATE utf8mb4_unicode_ci DEFAULT 'Registered',
+  `completion_date` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_employee_event` (`employee_id`,`event_id`),
+  KEY `employee_id` (`employee_id`),
+  KEY `event_id` (`event_id`),
+  CONSTRAINT `employee_event_participations_ibfk_1` FOREIGN KEY (`employee_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `employee_event_participations_ibfk_2` FOREIGN KEY (`event_id`) REFERENCES `green_events` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Table structure for table `women_safety_reports`
+--
+CREATE TABLE IF NOT EXISTS `women_safety_reports` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `employee_id` int NOT NULL,
+  `concern_type` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `description` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  `incident_date` date NOT NULL,
+  `location` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT 'Workplace Campus',
+  `confidential` tinyint(1) DEFAULT '1',
+  `status` enum('Submitted','Acknowledged','In Progress','Resolved') COLLATE utf8mb4_unicode_ci DEFAULT 'Submitted',
+  `assigned_to` int DEFAULT NULL,
+  `hr_notes` text COLLATE utf8mb4_unicode_ci,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `employee_id` (`employee_id`),
+  KEY `assigned_to` (`assigned_to`),
+  CONSTRAINT `women_safety_reports_ibfk_1` FOREIGN KEY (`employee_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `women_safety_reports_ibfk_2` FOREIGN KEY (`assigned_to`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Table structure for table `women_safety_emergency_requests`
+--
+CREATE TABLE IF NOT EXISTS `women_safety_emergency_requests` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `employee_id` int NOT NULL,
+  `request_type` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT 'SOS Emergency Alert',
+  `location` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT 'Campus / Workplace Area',
+  `status` enum('Emergency Raised','Acknowledged','In Progress','Resolved') COLLATE utf8mb4_unicode_ci DEFAULT 'Emergency Raised',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `acknowledged_at` datetime DEFAULT NULL,
+  `resolved_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `employee_id` (`employee_id`),
+  CONSTRAINT `women_safety_emergency_requests_ibfk_1` FOREIGN KEY (`employee_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

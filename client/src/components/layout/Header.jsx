@@ -149,6 +149,8 @@ const Header = ({ onMenuClick }) => {
             }
         } else if (n.type === 'attendance') {
             navigate(`${prefix}/regularization`);
+        } else if (n.type === 'safety' || n.type === 'emergency' || n.relatedModel === 'women_safety' || n.title?.toLowerCase().includes('safety') || n.title?.toLowerCase().includes('sos')) {
+            navigate(`${prefix}/women-safety`);
         }
     };
 

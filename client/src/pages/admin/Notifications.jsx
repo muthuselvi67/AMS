@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, Clock, ShieldCheck, UserPlus, FileText, AlertTriangle, CheckCircle, Info, XCircle, CheckCheck } from 'lucide-react';
+import { Bell, Clock, ShieldCheck, UserPlus, FileText, AlertTriangle, CheckCircle, Info, XCircle, CheckCheck, ShieldAlert, Siren } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../api/axios';
 import toast from 'react-hot-toast';
@@ -14,6 +14,8 @@ const typeIcons = {
     allowance_applied: <FileText size={18} color="var(--primary)" />,
     allowance_approved: <CheckCircle size={18} color="var(--secondary)" />,
     allowance_rejected: <XCircle size={18} color="var(--danger)" />,
+    safety: <ShieldAlert size={18} color="#F43F5E" />,
+    emergency: <Siren size={18} color="#EF4444" />,
     general: <Info size={18} color="var(--text-muted)" />
 };
 const typeColors = {
@@ -25,6 +27,8 @@ const typeColors = {
     allowance_applied: 'var(--primary-light)',
     allowance_approved: 'var(--secondary-light)',
     allowance_rejected: 'var(--danger-light)',
+    safety: 'rgba(244, 63, 94, 0.15)',
+    emergency: 'rgba(239, 68, 68, 0.2)',
     general: 'var(--bg-light)'
 };
 
@@ -62,13 +66,41 @@ const NotificationsPage = () => {
 
     const handleNotifClick = (n) => {
         if (!n.isRead) markRead(n.id);
-        const rolePrefix = `/${user?.role?.toLowerCase() || 'admin'}`;
-        if (n.type === 'leave_applied') {
-            navigate(`${rolePrefix}/leave-requests`);
-        } else if (n.type === 'allowance_applied') {
-            navigate(`${rolePrefix}/allowance-review`);
-        } else if (n.relatedModel === 'task_handovers' || n.message?.toLowerCase().includes('handover')) {
-            navigate(`${rolePrefix}/assigned-tasks`);
+        const role = user?.role?.toLowerCase() || 'admin';
+        const rolePrefix = `/${role}`;
+
+        const titleLower = (n.title || '').toLowerCase();
+        const msgLower = (n.message || '').toLowerCase();
+        const typeLower = (n.type || '').toLowerCase();
+
+        if (titleLower.includes('regularization') || msgLower.includes('regularization') || typeLower.includes('regularization')) {
+            navigate(`${rolePrefix}/regularization`);
+        } else if (titleLower.includes('check-in') || titleLower.includes('check-out') || msgLower.includes('check-in') || msgLower.includes('check-out')) {
+            navigate(`${rolePrefix}/attendance`);
+        } else if (typeLower === 'leave_applied' || titleLower.includes('leave')) {
+            if (role === 'employee') {
+                navigate(`${rolePrefix}/leave-history`);
+            } else {
+                navigate(`${rolePrefix}/leave-requests`);
+            }
+        } else if (typeLower.includes('allowance') || titleLower.includes('allowance')) {
+            if (role === 'employee') {
+                navigate(`${rolePrefix}/allowance-history`);
+            } else {
+                navigate(`${rolePrefix}/allowance-review`);
+            }
+        } else if (typeLower === 'emergency' || titleLower.includes('sos') || titleLower.includes('emergency')) {
+            navigate(`${rolePrefix}/women-safety`, { state: { activeTab: 'emergency' } });
+        } else if (typeLower === 'safety' || titleLower.includes('safety') || n.relatedModel === 'women_safety') {
+            navigate(`${rolePrefix}/women-safety`, { state: { activeTab: 'reports' } });
+        } else if (n.relatedModel === 'task_handovers' || msgLower.includes('handover') || titleLower.includes('task')) {
+            if (role === 'employee') {
+                navigate(`${rolePrefix}/assigned-tasks`);
+            } else {
+                navigate(`${rolePrefix}/tasks`);
+            }
+        } else if (typeLower === 'attendance') {
+            navigate(`${rolePrefix}/attendance`);
         }
     };
 

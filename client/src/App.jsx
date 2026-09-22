@@ -75,6 +75,11 @@ const MyDocuments = lazy(() => import('./pages/employee/Documents'));
 const EmployeeHelpDesk = lazy(() => import('./pages/employee/HelpDesk'));
 const SocialFeed = lazy(() => import('./pages/employee/SocialFeed'));
 const WFHPolicy = lazy(() => import('./pages/employee/WFHPolicy'));
+const EmployeeSafetyHub = lazy(() => import('./pages/employee/EmployeeSafetyHub'));
+const GreenEvents = lazy(() => import('./pages/employee/GreenEvents'));
+const ManageGreenEvents = lazy(() => import('./pages/admin/ManageGreenEvents'));
+const WomenSafety = lazy(() => import('./pages/employee/WomenSafety'));
+const ManageWomenSafety = lazy(() => import('./pages/admin/ManageWomenSafety'));
 
 // PM Pages
 const PMDashboard = lazy(() => import('./pages/pm/Dashboard'));
@@ -144,6 +149,8 @@ function App() {
                                 <Route path="/admin/appraisals" element={<HRAppraisal />} />
                                 <Route path="/admin/pm-appraisals" element={<HRPMAppraisals />} />
                                 <Route path="/admin/wfh-policy" element={<WFHPolicyManager />} />
+                                <Route path="/admin/green-events" element={<ManageGreenEvents />} />
+                                <Route path="/admin/women-safety" element={<ManageWomenSafety />} />
                                 <Route path="/admin/profile" element={<Profile />} />
                             </Route>
                         </Route>
@@ -178,6 +185,8 @@ function App() {
                                 <Route path="/hr/allowance-reports" element={<AllowanceReports />} />
                                 <Route path="/hr/allowance-review" element={<ReviewAllowances />} />
                                 <Route path="/hr/wfh-policy" element={<WFHPolicyManager />} />
+                                <Route path="/hr/green-events" element={<ManageGreenEvents />} />
+                                <Route path="/hr/women-safety" element={<ManageWomenSafety />} />
                                 <Route path="/hr/profile" element={<Profile />} />
                             </Route>
                         </Route>
@@ -211,6 +220,11 @@ function App() {
                                 <Route path="/employee/allowance-history" element={<AllowanceHistory />} />
                                 <Route path="/employee/wfh-policy" element={<WFHPolicy />} />
                                 <Route path="/employee/assigned-tasks" element={<AssignedTasks />} />
+                                <Route path="/employee/women-safety" element={<WomenSafety />} />
+                                <Route path="/employee/posh-act" element={<EmployeeSafetyHub initialTab="posh-act" />} />
+                                <Route path="/employee/green-events" element={<GreenEvents />} />
+                                <Route path="/employee/env-problems" element={<EmployeeSafetyHub initialTab="env-problems" />} />
+                                <Route path="/employee/carbon-calc" element={<EmployeeSafetyHub initialTab="carbon-calc" />} />
                                 <Route path="/employee/chat" element={<Chat />} />
                                 <Route path="/employee/meetings/schedule" element={<AdminMeetingSchedule />} />
                             </Route>

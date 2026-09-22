@@ -33,6 +33,8 @@ require_once __DIR__ . '/controllers/WFHController.php';
 require_once __DIR__ . '/controllers/TaskHandoverController.php';
 require_once __DIR__ . '/controllers/ChatController.php';
 require_once __DIR__ . '/controllers/MeetingController.php';
+require_once __DIR__ . '/controllers/GreenEventController.php';
+require_once __DIR__ . '/controllers/WomenSafetyController.php';
 
 
 
@@ -186,6 +188,14 @@ switch ($resource) {
         require_once __DIR__ . '/controllers/TimesheetController.php';
         $controller = new TimesheetController($db, $method, $id, $user, $subId);
         // We will update TimesheetController to have processRequest
+        $controller->processRequest();
+        break;
+    case 'green-events':
+        $controller = new GreenEventController($db, $method, $id, $user, $subId);
+        $controller->processRequest();
+        break;
+    case 'women-safety':
+        $controller = new WomenSafetyController($db, $method, $id, $user, $subId);
         $controller->processRequest();
         break;
     default:
