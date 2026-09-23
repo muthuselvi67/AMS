@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, Clock, ShieldCheck, UserPlus, FileText, AlertTriangle, CheckCircle, Info, XCircle, CheckCheck, ShieldAlert, Siren } from 'lucide-react';
+import { Bell, Clock, ShieldCheck, UserPlus, FileText, AlertTriangle, CheckCircle, Info, XCircle, CheckCheck, ShieldAlert, Siren, LifeBuoy } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../api/axios';
 import toast from 'react-hot-toast';
@@ -16,6 +16,8 @@ const typeIcons = {
     allowance_rejected: <XCircle size={18} color="var(--danger)" />,
     safety: <ShieldAlert size={18} color="#F43F5E" />,
     emergency: <Siren size={18} color="#EF4444" />,
+    helpdesk: <LifeBuoy size={18} color="#3B82F6" />,
+    complaint: <AlertTriangle size={18} color="#F59E0B" />,
     general: <Info size={18} color="var(--text-muted)" />
 };
 const typeColors = {
@@ -29,6 +31,8 @@ const typeColors = {
     allowance_rejected: 'var(--danger-light)',
     safety: 'rgba(244, 63, 94, 0.15)',
     emergency: 'rgba(239, 68, 68, 0.2)',
+    helpdesk: 'rgba(59, 130, 246, 0.15)',
+    complaint: 'rgba(245, 158, 11, 0.15)',
     general: 'var(--bg-light)'
 };
 
@@ -73,34 +77,49 @@ const NotificationsPage = () => {
         const msgLower = (n.message || '').toLowerCase();
         const typeLower = (n.type || '').toLowerCase();
 
-        if (titleLower.includes('regularization') || msgLower.includes('regularization') || typeLower.includes('regularization')) {
+        // 1. Emergency / SOS alerts
+        if (typeLower === 'emergency' || titleLower.includes('sos') || titleLower.includes('emergency') || msgLower.includes('sos') || msgLower.includes('emergency')) {
+            navigate(`${rolePrefix}/women-safety`, { state: { activeTab: 'emergency', id: n.relatedId } });
+        }
+        // 2. Safety / Workplace complaints / POSH / Environmental
+        else if (typeLower === 'safety' || n.relatedModel === 'women_safety' || titleLower.includes('safety') || titleLower.includes('posh') || msgLower.includes('safety complaint') || msgLower.includes('posh')) {
+            navigate(`${rolePrefix}/women-safety`, { state: { activeTab: 'reports', reportId: n.relatedId } });
+        }
+        // 3. Regularization
+        else if (titleLower.includes('regularization') || msgLower.includes('regularization') || typeLower.includes('regularization')) {
             navigate(`${rolePrefix}/regularization`);
-        } else if (titleLower.includes('check-in') || titleLower.includes('check-out') || msgLower.includes('check-in') || msgLower.includes('check-out')) {
+        }
+        // 4. Attendance
+        else if (titleLower.includes('check-in') || titleLower.includes('check-out') || msgLower.includes('check-in') || msgLower.includes('check-out') || typeLower === 'attendance') {
             navigate(`${rolePrefix}/attendance`);
-        } else if (typeLower === 'leave_applied' || titleLower.includes('leave')) {
+        }
+        // 5. HelpDesk Support Tickets
+        else if (typeLower === 'helpdesk' || typeLower === 'complaint' || n.relatedModel === 'tickets' || titleLower.includes('helpdesk') || titleLower.includes('ticket')) {
+            navigate(`${rolePrefix}/helpdesk`, { state: { ticketId: n.relatedId } });
+        }
+        // 6. Leave Requests
+        else if (typeLower === 'leave_applied' || titleLower.includes('leave')) {
             if (role === 'employee') {
                 navigate(`${rolePrefix}/leave-history`);
             } else {
                 navigate(`${rolePrefix}/leave-requests`);
             }
-        } else if (typeLower.includes('allowance') || titleLower.includes('allowance')) {
+        }
+        // 7. Allowance Requests
+        else if (typeLower.includes('allowance') || titleLower.includes('allowance')) {
             if (role === 'employee') {
                 navigate(`${rolePrefix}/allowance-history`);
             } else {
                 navigate(`${rolePrefix}/allowance-review`);
             }
-        } else if (typeLower === 'emergency' || titleLower.includes('sos') || titleLower.includes('emergency')) {
-            navigate(`${rolePrefix}/women-safety`, { state: { activeTab: 'emergency' } });
-        } else if (typeLower === 'safety' || titleLower.includes('safety') || n.relatedModel === 'women_safety') {
-            navigate(`${rolePrefix}/women-safety`, { state: { activeTab: 'reports' } });
-        } else if (n.relatedModel === 'task_handovers' || msgLower.includes('handover') || titleLower.includes('task')) {
+        }
+        // 8. Task Handovers
+        else if (n.relatedModel === 'task_handovers' || msgLower.includes('handover') || titleLower.includes('task')) {
             if (role === 'employee') {
                 navigate(`${rolePrefix}/assigned-tasks`);
             } else {
                 navigate(`${rolePrefix}/tasks`);
             }
-        } else if (typeLower === 'attendance') {
-            navigate(`${rolePrefix}/attendance`);
         }
     };
 

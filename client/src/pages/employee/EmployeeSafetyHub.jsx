@@ -12,6 +12,8 @@ import {
   INITIAL_ENV_PROBLEMS,
   EMERGENCY_CONTACTS
 } from '../../data/employeeData';
+import api from '../../api/axios';
+import toast from 'react-hot-toast';
 import './EmployeeSafetyHub.css';
 
 export default function EmployeeSafetyHub({ initialTab = 'women-safety' }) {
@@ -57,6 +59,15 @@ export default function EmployeeSafetyHub({ initialTab = 'women-safety' }) {
     } else if (sosCountdown === 0) {
       setSosActive(true);
       setSosCountdown(null);
+      // Trigger API SOS Alert to HR & Security
+      try {
+        api.post('/women-safety/sos', {
+          location: gpsLocation,
+          request_type: 'SOS Emergency Trigger (Safety Hub)'
+        }).then(() => {
+          toast.error('🚨 Emergency SOS alert dispatched to HR & Security!', { duration: 6000 });
+        }).catch(() => {});
+      } catch (err) {}
     }
     return () => clearTimeout(timer);
   }, [sosCountdown]);
@@ -119,7 +130,7 @@ export default function EmployeeSafetyHub({ initialTab = 'women-safety' }) {
   const [trackingSearch, setTrackingSearch] = useState('');
   const [trackedItem, setTrackedItem] = useState(null);
 
-  const handleGrievanceSubmit = (e) => {
+  const handleGrievanceSubmit = async (e) => {
     e.preventDefault();
     const code = `POSH-2026-${Math.floor(1000 + Math.random() * 9000)}`;
     const created = {
@@ -137,6 +148,23 @@ export default function EmployeeSafetyHub({ initialTab = 'women-safety' }) {
     setGrievances(updated);
     localStorage.setItem('trendify-posh-grievances', JSON.stringify(updated));
     setSubmittedCode(code);
+
+    try {
+      await api.post('/women-safety/report', {
+        concern_type: newGrievance.category || 'Harassment',
+        subject: `POSH Grievance: ${newGrievance.category}`,
+        description: newGrievance.description,
+        incident_date: newGrievance.incidentDate || new Date().toISOString().split('T')[0],
+        location: newGrievance.incidentLocation || 'Workplace Campus',
+        person_involved: formType === 'co-associate' ? 'Witness / Ally Filing' : (newGrievance.isAnonymous ? 'Anonymous' : ''),
+        supporting_info: `Case: ${code} | Type: ${formType === 'co-associate' ? 'Co-Associate Witness' : 'Direct Associate'}`,
+        confidential: true
+      });
+      toast.success('Grievance reported confidentially to HR & ICC!');
+    } catch (err) {
+      // ignore
+    }
+
     setNewGrievance({
       category: 'Verbal Harassment',
       incidentDate: '',
@@ -290,6 +318,20 @@ export default function EmployeeSafetyHub({ initialTab = 'women-safety' }) {
     setEnvProblems(updated);
     setVotedProbs([...votedProbs, created.id]);
     localStorage.setItem('trendify-env-problems', JSON.stringify(updated));
+
+    try {
+      api.post('/women-safety/report', {
+        concern_type: 'Environmental Issue',
+        subject: `Environmental Problem: ${newProblem.title}`,
+        description: `${newProblem.description} (Category: ${newProblem.category}, Severity: ${newProblem.severity})`,
+        incident_date: new Date().toISOString().split('T')[0],
+        location: newProblem.location || 'Main Office Campus',
+        confidential: false
+      }).then(() => {
+        toast.success('Environmental problem reported to HR & Facilities!');
+      }).catch(() => {});
+    } catch (err) {}
+
     setShowProbModal(false);
     setNewProblem({ title: '', category: 'Energy Waste', severity: 'Medium', location: '', description: '' });
   };

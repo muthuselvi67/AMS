@@ -5,6 +5,7 @@ import {
   ShieldAlert, ShieldCheck, Lock, Clock, Search, Filter,
   CheckCircle2, Users, AlertTriangle, MessageSquare, PhoneCall, X, UserCheck
 } from 'lucide-react';
+import { GRIEVANCE_CATEGORY_LIST, GRIEVANCE_CATEGORIES } from '../../data/grievanceCategories';
 import api from '../../api/axios';
 import toast from 'react-hot-toast';
 
@@ -40,20 +41,7 @@ export default function ManageWomenSafety() {
     hr_notes: '',
   });
 
-  const CONCERN_CATEGORIES = [
-    'All',
-    'Co-worker Related Issue',
-    'Harassment',
-    'Inappropriate Behaviour',
-    'Verbal Misconduct',
-    'Workplace Safety',
-    'Unsafe Working Environment',
-    'Environmental Issue',
-    'Discrimination',
-    'Threatening Behaviour',
-    'Personal Safety Concern',
-    'Other Workplace Concern'
-  ];
+  const CONCERN_CATEGORIES = ['All', ...GRIEVANCE_CATEGORY_LIST];
 
   const STATUS_LIST = ['Submitted', 'Under Review', 'Assigned', 'Action in Progress', 'Resolved', 'Closed'];
 
@@ -103,6 +91,15 @@ export default function ManageWomenSafety() {
   useEffect(() => {
     fetchAdminData();
   }, [statusFilter]);
+
+  useEffect(() => {
+    if (location.state?.reportId && reports.length > 0) {
+      const target = reports.find(r => String(r.id) === String(location.state.reportId));
+      if (target) {
+        handleOpenReviewModal(target);
+      }
+    }
+  }, [location.state, reports]);
 
   useEffect(() => {
     if (selectedReport) {
@@ -168,9 +165,9 @@ export default function ManageWomenSafety() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.5rem' }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#E11D48', fontWeight: 700, fontSize: '0.85rem' }}>
-            <Lock size={16} /> Confidential HR / Higher Authority Safety Console
+            <Lock size={16} /> Confidential HR / Higher Authority Grievances Console
           </div>
-          <h1 style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--text-primary)' }}>Women Safety & Workplace Concerns Console</h1>
+          <h1 style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--text-primary)' }}>Grievances Tracking Console</h1>
         </div>
       </div>
 
@@ -299,7 +296,12 @@ export default function ManageWomenSafety() {
                   </td>
                   <td style={{ padding: '1rem' }}>
                     <div style={{ fontWeight: 800, color: 'var(--text-primary)' }}>{rep.subject || rep.concern_type}</div>
-                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Category: {rep.concern_type}</div>
+                    <div style={{ fontSize: '0.8rem', color: '#E11D48', fontWeight: 600, marginTop: '2px' }}>Category: {rep.concern_type}</div>
+                    {rep.sub_category && (
+                      <div style={{ fontSize: '0.76rem', color: '#4F46E5', background: '#EEF2FF', padding: '2px 6px', borderRadius: 4, display: 'inline-block', marginTop: '3px' }}>
+                        • {rep.sub_category}
+                      </div>
+                    )}
                   </td>
                   <td style={{ padding: '1rem', fontSize: '0.88rem' }}>
                     <div>📍 {rep.location}</div>
@@ -478,8 +480,13 @@ export default function ManageWomenSafety() {
                   </div>
 
                   <div>
-                    <span style={{ color: 'var(--text-muted, #94A3B8)', fontSize: '0.75rem', fontWeight: 700, display: 'block', textTransform: 'uppercase', marginBottom: '0.2rem' }}>Category</span>
+                    <span style={{ color: 'var(--text-muted, #94A3B8)', fontSize: '0.75rem', fontWeight: 700, display: 'block', textTransform: 'uppercase', marginBottom: '0.2rem' }}>Category & Issue</span>
                     <strong style={{ color: '#E11D48', fontSize: '0.92rem' }}>{selectedReport.concern_type}</strong>
+                    {selectedReport.sub_category && (
+                      <div style={{ color: '#4F46E5', fontSize: '0.82rem', fontWeight: 600, marginTop: '2px' }}>
+                        • {selectedReport.sub_category}
+                      </div>
+                    )}
                   </div>
 
                   <div>

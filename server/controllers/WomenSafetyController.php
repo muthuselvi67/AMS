@@ -98,7 +98,7 @@ class WomenSafetyController {
             $empCode = $uInfo['employee_id'] ?? ('ID: ' . $userId);
 
             // Notify HR/Admin users via notifications table
-            $this->notifyHrAdminUsers("🚨 EMERGENCY SOS ALERT RAISED", "Employee {$empName} ({$empCode}) triggered an Emergency SOS Alert at location: {$location}.", "emergency");
+            $this->notifyHrAdminUsers("🚨 EMERGENCY SOS ALERT RAISED", "Employee {$empName} ({$empCode}) triggered an Emergency SOS Alert at location: {$location}.", "emergency", $requestId);
 
             Response::json(true, "🚨 Emergency SOS alert sent successfully to Corporate Security & HR!", [
                 "request_id" => $requestId,
@@ -121,21 +121,8 @@ class WomenSafetyController {
             return;
         }
 
-        $validTypes = [
-            'Co-worker Related Issue',
-            'Harassment',
-            'Inappropriate Behaviour',
-            'Verbal Misconduct',
-            'Workplace Safety',
-            'Unsafe Working Environment',
-            'Environmental Issue',
-            'Discrimination',
-            'Threatening Behaviour',
-            'Personal Safety Concern',
-            'Other Workplace Concern'
-        ];
-
-        $concernType = in_array($data['concern_type'], $validTypes) ? $data['concern_type'] : 'Other Workplace Concern';
+        $concernType = !empty($data['concern_type']) ? trim($data['concern_type']) : 'General Grievance';
+        $subCategory = !empty($data['sub_category']) ? trim($data['sub_category']) : null;
         $subject = !empty($data['subject']) ? trim($data['subject']) : 'Workplace Safety Concern';
         $description = trim($data['description']);
         $incidentDate = !empty($data['incident_date']) ? $data['incident_date'] : date('Y-m-d');
@@ -146,14 +133,15 @@ class WomenSafetyController {
 
         try {
             $query = "INSERT INTO women_safety_reports 
-                      (employee_id, concern_type, subject, description, incident_date, location, person_involved, supporting_info, confidential, status, created_at)
+                      (employee_id, concern_type, sub_category, subject, description, incident_date, location, person_involved, supporting_info, confidential, status, created_at)
                       VALUES 
-                      (:employee_id, :concern_type, :subject, :description, :incident_date, :location, :person_involved, :supporting_info, :confidential, 'Submitted', NOW())";
+                      (:employee_id, :concern_type, :sub_category, :subject, :description, :incident_date, :location, :person_involved, :supporting_info, :confidential, 'Submitted', NOW())";
 
             $stmt = $this->db->prepare($query);
             $stmt->execute([
                 ':employee_id' => $userId,
                 ':concern_type' => $concernType,
+                ':sub_category' => $subCategory,
                 ':subject' => $subject,
                 ':description' => $description,
                 ':incident_date' => $incidentDate,
@@ -165,8 +153,23 @@ class WomenSafetyController {
 
             $reportId = $this->db->lastInsertId();
 
-            // Notify HR
-            $this->notifyHrAdminUsers("New Women Safety & Workplace Concern Filed", "A confidential report (ID: #{$reportId} - {$subject}) has been submitted for review.", "safety");
+            // Fetch reporter details
+            $uStmt = $this->db->prepare("SELECT name, employee_id, department FROM users WHERE id = :uid");
+            $uStmt->execute([':uid' => $userId]);
+            $uInfo = $uStmt->fetch(PDO::FETCH_ASSOC);
+            $empName = $uInfo['name'] ?? 'Employee';
+            $empCode = $uInfo['employee_id'] ?? ('ID: ' . $userId);
+            $empDept = $uInfo['department'] ?? 'General';
+
+            $categoryLabel = $subCategory ? "{$concernType} - {$subCategory}" : $concernType;
+
+            // Notify HR & Admin immediately
+            $this->notifyHrAdminUsers(
+                "New Safety Complaint / Concern Filed",
+                "Employee {$empName} ({$empDept} - {$empCode}) filed a complaint: \"{$subject}\" ({$categoryLabel}) at {$location}.",
+                "safety",
+                $reportId
+            );
 
             Response::json(true, "Workplace concern report submitted confidentially to HR.", [
                 "report_id" => $reportId,
@@ -183,7 +186,7 @@ class WomenSafetyController {
 
         try {
             // STRICT PRIVACY: Employee ONLY sees their own reports. Never hr_notes.
-            $query = "SELECT id, concern_type, subject, description, incident_date, location, person_involved, supporting_info, confidential, status, created_at, updated_at
+            $query = "SELECT id, concern_type, sub_category, subject, description, incident_date, location, person_involved, supporting_info, confidential, status, created_at, updated_at
                       FROM women_safety_reports 
                       WHERE employee_id = :employee_id 
                       ORDER BY created_at DESC";
@@ -257,7 +260,7 @@ class WomenSafetyController {
             }
 
             if ($search && trim($search) !== '') {
-                $query .= " AND (r.concern_type LIKE :search OR r.description LIKE :search OR u.name LIKE :search OR r.location LIKE :search)";
+                $query .= " AND (r.concern_type LIKE :search OR r.sub_category LIKE :search OR r.subject LIKE :search OR r.description LIKE :search OR u.name LIKE :search OR r.location LIKE :search)";
                 $params[':search'] = '%' . trim($search) . '%';
             }
 
@@ -461,19 +464,20 @@ class WomenSafetyController {
     }
 
     // Helper method to notify HR & Admin users
-    private function notifyHrAdminUsers($title, $message, $type = 'safety') {
+    private function notifyHrAdminUsers($title, $message, $type = 'safety', $relatedId = 0) {
         try {
             $hrStmt = $this->db->prepare("SELECT id FROM users WHERE role IN ('admin', 'hr')");
             $hrStmt->execute();
             $admins = $hrStmt->fetchAll(PDO::FETCH_ASSOC);
 
-            $notifStmt = $this->db->prepare("INSERT INTO notifications (recipient_id, title, message, type, related_id, related_model, is_read, created_at, updated_at) VALUES (:uid, :title, :msg, :type, 0, 'women_safety', 0, NOW(), NOW())");
+            $notifStmt = $this->db->prepare("INSERT INTO notifications (recipient_id, title, message, type, related_id, related_model, is_read, created_at, updated_at) VALUES (:uid, :title, :msg, :type, :rel_id, 'women_safety', 0, NOW(), NOW())");
             foreach ($admins as $adm) {
                 $notifStmt->execute([
                     ':uid' => $adm['id'],
                     ':title' => $title,
                     ':msg' => $message,
-                    ':type' => $type
+                    ':type' => $type,
+                    ':rel_id' => $relatedId
                 ]);
             }
         } catch (Exception $e) {

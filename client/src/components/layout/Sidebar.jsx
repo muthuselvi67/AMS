@@ -52,8 +52,9 @@ const adminLinks = [
         section: 'HRMS Modules', links: [
             { to: '/admin/assets', icon: Laptop, label: 'Asset Management' },
             { to: '/admin/announcements', icon: Megaphone, label: 'Announcements' },
+            { to: '/admin/helpdesk', icon: LifeBuoy, label: 'HelpDesk' },
             { to: '/admin/pm-appraisals', icon: ClipboardList, label: 'PM Appraisals' },
-            { to: '/admin/women-safety', icon: ShieldAlert, label: 'Women Safety Console' },
+            { to: '/admin/women-safety', icon: ShieldAlert, label: 'Grievances Tracking' },
         ]
     },
     {
@@ -110,7 +111,7 @@ const hrLinks = [
             { to: '/hr/announcements', icon: Megaphone, label: 'Announcements' },
             { to: '/hr/helpdesk', icon: LifeBuoy, label: 'HelpDesk' },
             { to: '/hr/pm-appraisals', icon: ClipboardList, label: 'PM Appraisals' },
-            { to: '/hr/women-safety', icon: ShieldAlert, label: 'Women Safety Console' },
+            { to: '/hr/women-safety', icon: ShieldAlert, label: 'Grievances Tracking' },
         ]
     },
     {
@@ -164,7 +165,7 @@ const employeeLinks = [
             { to: '/employee/documents', icon: BookMarked, label: 'My Documents' },
             { to: '/employee/helpdesk', icon: LifeBuoy, label: 'HR HelpDesk' },
             { to: '/employee/pm-appraisal', icon: ClipboardList, label: 'My Appraisal' },
-            { to: '/employee/women-safety', icon: ShieldAlert, label: 'Women Safety' },
+            { to: '/employee/women-safety', icon: ShieldAlert, label: 'Grievances Tracking' },
         ]
     },
     {

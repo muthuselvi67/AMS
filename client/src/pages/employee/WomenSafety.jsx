@@ -3,8 +3,9 @@ import { createPortal } from 'react-dom';
 import {
   ShieldAlert, ShieldCheck, PhoneCall, AlertTriangle, Send, Lock,
   Clock, FileText, CheckCircle2, UserCheck, Eye, EyeOff, X, Phone,
-  HelpCircle, Shield, LifeBuoy
+  HelpCircle, Shield, LifeBuoy, ChevronDown
 } from 'lucide-react';
+import { GRIEVANCE_CATEGORIES, GRIEVANCE_CATEGORY_LIST } from '../../data/grievanceCategories';
 import api from '../../api/axios';
 import toast from 'react-hot-toast';
 import './WomenSafety.css';
@@ -19,9 +20,10 @@ export default function WomenSafety() {
   const [mySosHistory, setMySosHistory] = useState([]);
   const [sosLoading, setSosLoading] = useState(false);
 
-  // Safety Concern Form State (Matches exact prompt fields)
+  // Safety Concern Form State (with 40 categories and dependent subcategories)
   const [form, setForm] = useState({
-    concern_type: 'Workplace Safety',
+    concern_type: GRIEVANCE_CATEGORY_LIST[0],
+    sub_category: GRIEVANCE_CATEGORIES[GRIEVANCE_CATEGORY_LIST[0]][0],
     subject: '',
     description: '',
     incident_date: new Date().toISOString().split('T')[0],
@@ -44,21 +46,6 @@ export default function WomenSafety() {
     { name: "Campus Security Command Center", phone: "+91 98765 00000", role: "24/7 Campus Patrol & Response", highlight: false },
     { name: "Employee Wellbeing & Counseling Desk", phone: "1800-200-8888", role: "Workplace Support & Counseling", highlight: false }
   ]);
-
-  // All 11 Exact Concern Categories
-  const CONCERN_CATEGORIES = [
-    'Co-worker Related Issue',
-    'Harassment',
-    'Inappropriate Behaviour',
-    'Verbal Misconduct',
-    'Workplace Safety',
-    'Unsafe Working Environment',
-    'Environmental Issue',
-    'Discrimination',
-    'Threatening Behaviour',
-    'Personal Safety Concern',
-    'Other Workplace Concern'
-  ];
 
   // Fetch My Reports (STRICT PRIVACY - Only Logged-In User's Data)
   const fetchMyReports = async () => {
@@ -179,6 +166,7 @@ export default function WomenSafety() {
       const created = {
         id: Math.floor(100 + Math.random() * 900),
         concern_type: form.concern_type,
+        sub_category: form.sub_category,
         subject: form.subject,
         description: form.description,
         incident_date: form.incident_date,
@@ -200,8 +188,10 @@ export default function WomenSafety() {
   };
 
   const resetForm = () => {
+    const defaultCat = GRIEVANCE_CATEGORY_LIST[0];
     setForm({
-      concern_type: 'Workplace Safety',
+      concern_type: defaultCat,
+      sub_category: GRIEVANCE_CATEGORIES[defaultCat][0],
       subject: '',
       description: '',
       incident_date: new Date().toISOString().split('T')[0],
@@ -216,10 +206,10 @@ export default function WomenSafety() {
     <div className="women-safety-container fade-in">
       {/* Hero Header */}
       <div className="ws-hero-banner">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#E11D48', fontWeight: 700, fontSize: '0.85rem', marginBottom: '0.4rem' }}>
-          <ShieldAlert size={16} /> Confidential Workplace Safety Portal
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#9333EA', fontWeight: 700, fontSize: '0.85rem', marginBottom: '0.4rem' }}>
+          <ShieldAlert size={16} /> Confidential Workplace Grievances Portal
         </div>
-        <h1 className="ws-hero-title">Women Safety & Workplace Concerns</h1>
+        <h1 className="ws-hero-title">Grievances Tracking & Workplace Concerns</h1>
         <p className="ws-hero-subtitle">
           Your safety and well-being at the workplace matter. If you experience or witness a workplace concern, you can confidentially report it to the appropriate authority.
         </p>
@@ -271,21 +261,55 @@ export default function WomenSafety() {
           </div>
 
           <form onSubmit={handleReportSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem' }}>
               <div className="form-group">
-                <label className="form-label">Concern Category *</label>
+                <label className="form-label" style={{ fontWeight: 700 }}>
+                  Grievance Category *
+                </label>
                 <select
                   className="form-control"
                   value={form.concern_type}
-                  onChange={e => setForm({ ...form, concern_type: e.target.value })}
+                  onChange={e => {
+                    const selected = e.target.value;
+                    const subOptions = GRIEVANCE_CATEGORIES[selected] || [];
+                    setForm({
+                      ...form,
+                      concern_type: selected,
+                      sub_category: subOptions[0] || ''
+                    });
+                  }}
                   required
+                  style={{ fontWeight: 600 }}
                 >
-                  {CONCERN_CATEGORIES.map(cat => (
-                    <option key={cat} value={cat}>{cat}</option>
+                  {GRIEVANCE_CATEGORY_LIST.map(cat => (
+                    <option key={cat} value={cat}>
+                      {cat}
+                    </option>
                   ))}
                 </select>
               </div>
 
+              <div className="form-group">
+                <label className="form-label" style={{ fontWeight: 700 }}>
+                  Specific Issue / Sub-Category *
+                </label>
+                <select
+                  className="form-control"
+                  value={form.sub_category}
+                  onChange={e => setForm({ ...form, sub_category: e.target.value })}
+                  required
+                  style={{ fontWeight: 500 }}
+                >
+                  {(GRIEVANCE_CATEGORIES[form.concern_type] || []).map(sub => (
+                    <option key={sub} value={sub}>
+                      {sub}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem' }}>
               <div className="form-group">
                 <label className="form-label">Subject / Short Title *</label>
                 <input
@@ -539,8 +563,13 @@ export default function WomenSafety() {
                   <div key={rep.id} style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '1.2rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.6rem' }}>
                       <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
                           <span className="ws-status-badge category">{rep.concern_type}</span>
+                          {rep.sub_category && (
+                            <span style={{ fontSize: '0.78rem', background: '#EEF2FF', color: '#4F46E5', padding: '3px 8px', borderRadius: '6px', fontWeight: 600 }}>
+                              {rep.sub_category}
+                            </span>
+                          )}
                           <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 700 }}>REPORT ID: #{rep.id}</span>
                         </div>
                         <h4 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-primary)', marginTop: '0.4rem' }}>{rep.subject || rep.concern_type}</h4>

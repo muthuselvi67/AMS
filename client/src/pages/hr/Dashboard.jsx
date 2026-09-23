@@ -346,7 +346,7 @@ const HRDashboard = () => {
             {/* Page header */}
             <div className="emp-dash-header">
                 <div>
-                    <h1 className="emp-dash-title">Welcome, {user?.name?.split(' ')[0]}! <span role="img" aria-label="wave">👋</span></h1>
+                    <h1 className="emp-dash-title">Welcome, {(user?.name || 'User').split(' ')[0]}! <span role="img" aria-label="wave">👋</span></h1>
                     <p className="emp-dash-subtitle">Here's your attendance summary for today.</p>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
@@ -579,7 +579,7 @@ const HRDashboard = () => {
                                             background: 'linear-gradient(135deg, #1A73E8, #0D47A1)', color: '#fff',
                                             display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 9, flexShrink: 0
                                         }}>
-                                            {p.employee?.name?.charAt(0).toUpperCase()}
+                                            {(p.employee?.name || 'U').charAt(0).toUpperCase()}
                                         </div>
                                         <div style={{ flex: 1 }}>
                                             <div style={{ fontWeight: 600, fontSize: 12, lineHeight: 1.3 }}>{p.employee?.name}</div>
@@ -609,7 +609,7 @@ const HRDashboard = () => {
                                             background: 'linear-gradient(135deg, #7C3AED, #5B21B6)', color: '#fff',
                                             display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 9, flexShrink: 0
                                         }}>
-                                            {p.employee?.name?.charAt(0).toUpperCase()}
+                                            {(p.employee?.name || 'U').charAt(0).toUpperCase()}
                                         </div>
                                         <div style={{ flex: 1 }}>
                                             <div style={{ fontWeight: 600, fontSize: 12, lineHeight: 1.3 }}>{p.employee?.name}</div>

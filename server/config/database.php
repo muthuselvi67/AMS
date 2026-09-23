@@ -72,12 +72,15 @@ class Database {
                 ");
             } catch (Exception $e) {}
 
+            try { $this->conn->exec("ALTER TABLE women_safety_reports MODIFY COLUMN concern_type VARCHAR(255) DEFAULT 'General Grievance'"); } catch(Exception $e){}
+            try { $this->conn->exec("ALTER TABLE women_safety_reports ADD COLUMN IF NOT EXISTS sub_category VARCHAR(255) DEFAULT NULL"); } catch(Exception $e){}
             try { $this->conn->exec("ALTER TABLE women_safety_reports ADD COLUMN IF NOT EXISTS subject VARCHAR(255) DEFAULT 'Workplace Concern'"); } catch(Exception $e){}
             try { $this->conn->exec("ALTER TABLE women_safety_reports ADD COLUMN IF NOT EXISTS person_involved VARCHAR(255) DEFAULT NULL"); } catch(Exception $e){}
             try { $this->conn->exec("ALTER TABLE women_safety_reports ADD COLUMN IF NOT EXISTS supporting_info TEXT DEFAULT NULL"); } catch(Exception $e){}
             try { $this->conn->exec("ALTER TABLE women_safety_reports ADD COLUMN IF NOT EXISTS action_taken TEXT DEFAULT NULL"); } catch(Exception $e){}
             try { $this->conn->exec("ALTER TABLE women_safety_reports MODIFY COLUMN status ENUM('Submitted', 'Under Review', 'Assigned', 'Action in Progress', 'Resolved', 'Closed') DEFAULT 'Submitted'"); } catch(Exception $e){}
             try { $this->conn->exec("ALTER TABLE women_safety_reports MODIFY COLUMN assigned_to VARCHAR(255) DEFAULT NULL"); } catch(Exception $e){}
+            try { $this->conn->exec("ALTER TABLE notifications MODIFY COLUMN type VARCHAR(50) DEFAULT 'general'"); } catch(Exception $e){}
         } catch(PDOException $exception) {
             http_response_code(500);
             header('Content-Type: application/json; charset=utf-8');

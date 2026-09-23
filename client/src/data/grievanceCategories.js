@@ -1,0 +1,340 @@
+// Comprehensive Grievance & Workplace Concern Categories with Dependent Subcategories (40 Full Types)
+export const GRIEVANCE_CATEGORIES = {
+  "Compensation & Salary": [
+    "Salary not credited",
+    "Incorrect salary calculation",
+    "Unpaid incentives",
+    "Bonus disputes",
+    "Unauthorized deductions",
+    "Pay disparity / inequity",
+    "Other Salary Issue"
+  ],
+  "Payroll & Benefits": [
+    "PF / EPF issues",
+    "ESI issues",
+    "Tax deductions & TDS issues",
+    "Insurance claims",
+    "Reimbursement delays",
+    "Benefit eligibility",
+    "Other Payroll & Benefit Issue"
+  ],
+  "Attendance & Working Hours": [
+    "Incorrect attendance record",
+    "Missed punch regularisation",
+    "Overtime not recorded",
+    "Shift schedule disputes",
+    "Excessive working hours",
+    "Comp-off issues",
+    "Other Attendance Issue"
+  ],
+  "Leave & Holidays": [
+    "Leave rejection dispute",
+    "Leave balance discrepancy",
+    "Sick leave / Medical issues",
+    "Maternity / Paternity leave",
+    "Holiday calendar disputes",
+    "Casual / Earned leave concerns",
+    "Other Leave Issue"
+  ],
+  "Performance Appraisal": [
+    "Incorrect appraisal evaluation",
+    "Unfair performance rating",
+    "Lack of constructive feedback",
+    "Appraisal process concerns",
+    "Performance target disputes",
+    "KPI / Goal setting disputes",
+    "Other Appraisal Issue"
+  ],
+  "Promotion & Career Growth": [
+    "Promotion denial",
+    "Delayed promotion",
+    "Career progression concerns",
+    "Favoritism in promotions",
+    "Role stagnation / No growth",
+    "Other Career Growth Issue"
+  ],
+  "Transfer & Relocation": [
+    "Unwanted transfer / Relocation",
+    "Relocation expenses reimbursement",
+    "Transfer policy concerns",
+    "Location disputes",
+    "Commute / Remote transfer issues",
+    "Other Transfer Issue"
+  ],
+  "Recruitment & Hiring": [
+    "Hiring process concerns",
+    "Offer letter discrepancies",
+    "Joining & onboarding issues",
+    "Background verification problems",
+    "Candidate referral issues",
+    "Other Recruitment Issue"
+  ],
+  "Employment Contract": [
+    "Contract discrepancies",
+    "Incorrect designation / job title",
+    "Employment terms violation",
+    "Probation disputes",
+    "Confirmation delays",
+    "Bond / Agreement issues",
+    "Other Contract Issue"
+  ],
+  "Workplace Harassment": [
+    "Verbal harassment / Insults",
+    "Bullying & intimidation",
+    "Hostile workplace behavior",
+    "Humiliation / Belittling",
+    "Workplace misconduct",
+    "Stalking / Cyber-bullying",
+    "Other Harassment Concern"
+  ],
+  "Sexual Harassment / POSH": [
+    "Inappropriate comments / gestures",
+    "Unwanted physical advances",
+    "Sexual messages / Digital harassment",
+    "Inappropriate touching",
+    "Quid-pro-quo harassment",
+    "Hostile sexual environment",
+    "Other POSH Grievance"
+  ],
+  "Discrimination": [
+    "Gender discrimination",
+    "Age discrimination",
+    "Disability discrimination",
+    "Nationality / Ethnicity discrimination",
+    "Caste / Race discrimination",
+    "Religion / Faith discrimination",
+    "Other Discrimination"
+  ],
+  "Equal Opportunity": [
+    "Unequal treatment at workplace",
+    "Unequal access to opportunities",
+    "Biased project allocation",
+    "Biased training / skill nomination",
+    "Gender pay / opportunity gap",
+    "Other Equal Opportunity Issue"
+  ],
+  "Manager / Supervisor Issues": [
+    "Abusive management",
+    "Unreasonable demands",
+    "Micromanagement",
+    "Unfair treatment by manager",
+    "Inappropriate communication",
+    "Retaliation by manager",
+    "Other Managerial Issue"
+  ],
+  "Team / Colleague Conflicts": [
+    "Interpersonal disputes",
+    "Collaboration & teamwork issues",
+    "Workplace arguments / Fights",
+    "Communication breakdown",
+    "Exclusion / Alienation by peers",
+    "Other Colleague Conflict"
+  ],
+  "Workload & Staffing": [
+    "Excessive workload / Burnout",
+    "Understaffing in team",
+    "Unrealistic deadlines",
+    "Insufficient resources / Tools",
+    "Work distribution inequities",
+    "Other Workload Issue"
+  ],
+  "Workplace Conduct": [
+    "General misconduct",
+    "Inappropriate behavior",
+    "Company policy violations",
+    "Disrespectful behavior",
+    "Conflicts of interest",
+    "Language / Code of conduct breach",
+    "Other Conduct Concern"
+  ],
+  "Ethics & Integrity": [
+    "Fraud & embezzlement",
+    "Bribery & corruption",
+    "Falsification of records / timesheets",
+    "Conflict of interest",
+    "Unethical business practices",
+    "Theft / Misuse of company property",
+    "Other Ethics Issue"
+  ],
+  "Whistleblower Complaints": [
+    "Financial misconduct / Accounting fraud",
+    "Regulatory & statutory violations",
+    "Serious company policy breaches",
+    "Concealment of wrongdoing / Coverup",
+    "Executive misconduct",
+    "Other Whistleblower Report"
+  ],
+  "Health & Safety": [
+    "Unsafe workplace environment",
+    "Accidents / Injury hazards",
+    "Safety violations",
+    "Hazardous conditions",
+    "Inadequate safety equipment (PPE)",
+    "Fire & emergency preparedness",
+    "Other Health & Safety Concern"
+  ],
+  "Workplace Facilities": [
+    "Poor sanitation / Washroom hygiene",
+    "Inadequate facilities & seating",
+    "Cafeteria / Food quality issues",
+    "Drinking water availability",
+    "Transportation & cab safety",
+    "Parking issues",
+    "Office infrastructure / AC / Lighting",
+    "Other Facility Issue"
+  ],
+  "IT & Access": [
+    "System & VPN access problems",
+    "Email & collaboration tool issues",
+    "Software licensing & access",
+    "Unauthorized access concerns",
+    "IT support complaints & delays",
+    "Hardware / Laptop defects",
+    "Other IT Concern"
+  ],
+  "Data Privacy & Confidentiality": [
+    "Personal employee data misuse",
+    "Unauthorized disclosure of data",
+    "Privacy policy violations",
+    "Confidential information exposure",
+    "Improper customer data handling",
+    "Other Data Privacy Issue"
+  ],
+  "Information Security": [
+    "Phishing / Social engineering",
+    "Security-policy violations",
+    "Credential misuse / Password sharing",
+    "Suspected data breach / Leak",
+    "Unencrypted sensitive files",
+    "Other InfoSec Concern"
+  ],
+  "Company Policy": [
+    "Policy interpretation doubts",
+    "Inconsistent policy implementation",
+    "Policy violations by management",
+    "Unclear procedures / Ambiguity",
+    "Recent policy change disputes",
+    "Other Policy Concern"
+  ],
+  "HR Process": [
+    "Delayed HR response / SLA breach",
+    "Incorrect employee records / HRMS data",
+    "Onboarding issues",
+    "Offboarding & clearance delays",
+    "HR service & helpdesk complaints",
+    "Other HR Process Issue"
+  ],
+  "Training & Development": [
+    "Training access denied",
+    "Certification reimbursement support",
+    "Inadequate training material",
+    "Skill learning opportunities missing",
+    "Mandatory training concerns",
+    "Other Training Issue"
+  ],
+  "Remote / Hybrid Work": [
+    "Work-from-home policy disputes",
+    "Remote-work eligibility denial",
+    "Hybrid schedule conflicts",
+    "Monitoring & tracking concerns",
+    "WFH equipment & allowance",
+    "Other Remote Work Issue"
+  ],
+  "Travel & Expenses": [
+    "Travel reimbursement delays",
+    "Expense claim rejection",
+    "Travel allowance (DA) disputes",
+    "Accommodation / Hotel safety issues",
+    "Business travel disputes",
+    "Other Travel & Expense Issue"
+  ],
+  "Procurement / Vendor Issues": [
+    "Vendor misconduct / Kickbacks",
+    "Procurement irregularities",
+    "Supplier / Contractor disputes",
+    "Conflict of interest with vendors",
+    "Delayed vendor delivery impacting work",
+    "Other Procurement Issue"
+  ],
+  "Customer / Client Related": [
+    "Client verbal abuse / Misconduct",
+    "Unreasonable client demands",
+    "Client harassment / Threats",
+    "Ethical concerns involving customers",
+    "Client escalation handling",
+    "Other Client-Related Issue"
+  ],
+  "Project / Work Allocation": [
+    "Unfair project allocation",
+    "Role mismatch vs skills",
+    "Responsibility disputes",
+    "Resource allocation issues",
+    "Bench / Idle time disputes",
+    "Other Work Allocation Issue"
+  ],
+  "Recognition & Rewards": [
+    "Unrecognized contributions",
+    "Award nomination disputes",
+    "Incentive eligibility disputes",
+    "Unequal recognition in team",
+    "Spot award bias",
+    "Other Recognition Issue"
+  ],
+  "Employee Benefits": [
+    "Medical insurance coverage",
+    "Gratuity calculation issues",
+    "Retirement / Pension benefits",
+    "Employee discount & perks",
+    "Wellness & gym benefit issues",
+    "Other Employee Benefits Issue"
+  ],
+  "Separation / Exit": [
+    "Resignation acceptance issues",
+    "Notice period buyout dispute",
+    "Relieving letter delays",
+    "Full & final settlement delays",
+    "Experience certificate issues",
+    "Exit interview concerns",
+    "Other Separation Issue"
+  ],
+  "Termination / Disciplinary Action": [
+    "Disciplinary action disputes",
+    "Show-cause notice responses",
+    "Suspension concerns",
+    "Termination without due process",
+    "Warning letter dispute",
+    "Other Disciplinary Concern"
+  ],
+  "Workplace Accessibility": [
+    "Accessibility barriers (Physical/Wheelchair)",
+    "Reasonable accommodation requests",
+    "Assistive equipment / Screen reader needs",
+    "Accessible facilities / Restrooms",
+    "Digital accessibility issues",
+    "Other Accessibility Issue"
+  ],
+  "Corporate Social / Environmental Concerns": [
+    "Environmental violations",
+    "Sustainability concerns & waste",
+    "Community-impact complaints",
+    "Resource wastage in campus",
+    "Pollution / Hazardous disposal",
+    "Other Corporate Social / Eco Concern"
+  ],
+  "Legal / Regulatory Compliance": [
+    "Suspected violation of labor laws",
+    "Statutory licensing & compliances",
+    "Regulatory obligations breach",
+    "Non-compliance with local laws",
+    "Statutory audit violations",
+    "Other Legal & Compliance Concern"
+  ],
+  "Other / General Grievance": [
+    "Issues that don't fit an existing category",
+    "General workplace suggestions",
+    "Miscellaneous query",
+    "Other Unspecified Grievance"
+  ]
+};
+
+export const GRIEVANCE_CATEGORY_LIST = Object.keys(GRIEVANCE_CATEGORIES);

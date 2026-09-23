@@ -115,14 +115,46 @@ class HelpdeskController {
             'employee_id' => $this->user['id']
         ]);
 
-        Response::json(true, "Ticket created", ['id' => $this->db->lastInsertId()], 201);
+        $ticketId = $this->db->lastInsertId();
+
+        // Immediately notify HR & Admin users
+        try {
+            $uStmt = $this->db->prepare("SELECT name, department, employee_id FROM users WHERE id = :uid");
+            $uStmt->execute([':uid' => $this->user['id']]);
+            $uInfo = $uStmt->fetch(PDO::FETCH_ASSOC);
+            $empName = $uInfo['name'] ?? 'Employee';
+            $dept = $uInfo['department'] ?? 'General';
+            $priority = ucfirst($input['priority'] ?? 'medium');
+            $category = ucfirst($input['category'] ?? 'general');
+
+            $title = "New HelpDesk Ticket / Complaint: " . $input['subject'];
+            $msg = "{$empName} ({$dept}) raised a new {$category} complaint (#{$ticketId}) with {$priority} priority.";
+
+            $hrStmt = $this->db->prepare("SELECT id FROM users WHERE role IN ('admin', 'hr') AND id != :uid");
+            $hrStmt->execute([':uid' => $this->user['id']]);
+            $admins = $hrStmt->fetchAll(PDO::FETCH_ASSOC);
+
+            $notifStmt = $this->db->prepare("INSERT INTO notifications (recipient_id, title, message, type, related_id, related_model, is_read, created_at, updated_at) VALUES (:uid, :title, :msg, 'helpdesk', :rel_id, 'tickets', 0, NOW(), NOW())");
+            foreach ($admins as $adm) {
+                $notifStmt->execute([
+                    ':uid' => $adm['id'],
+                    ':title' => $title,
+                    ':msg' => $msg,
+                    ':rel_id' => $ticketId
+                ]);
+            }
+        } catch (Exception $e) {
+            // Ignore notification errors to not block ticket creation
+        }
+
+        Response::json(true, "Ticket created", ['id' => $ticketId], 201);
     }
 
     private function handlePutRequest($id) {
         $input = json_decode(file_get_contents('php://input'), true);
 
         // Fetch ticket to verify existence and check permissions
-        $stmt = $this->db->prepare("SELECT employee_id FROM tickets WHERE id = :id");
+        $stmt = $this->db->prepare("SELECT employee_id, subject FROM tickets WHERE id = :id");
         $stmt->execute(['id' => $id]);
         $ticket = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -153,6 +185,40 @@ class HelpdeskController {
                 'comment' => $input['comment']
             ]);
 
+            // Notify relevant party about the new comment
+            try {
+                $senderName = $this->user['name'] ?? 'User';
+                $snippet = strlen($input['comment']) > 60 ? substr($input['comment'], 0, 57) . '...' : $input['comment'];
+
+                if (in_array($this->user['role'], ['admin', 'hr'])) {
+                    // HR replied -> Notify ticket creator (employee)
+                    if (!empty($ticket['employee_id']) && $ticket['employee_id'] != $this->user['id']) {
+                        $nStmt = $this->db->prepare("INSERT INTO notifications (recipient_id, title, message, type, related_id, related_model, is_read, created_at, updated_at) VALUES (:uid, :title, :msg, 'helpdesk', :rel_id, 'tickets', 0, NOW(), NOW())");
+                        $nStmt->execute([
+                            ':uid' => $ticket['employee_id'],
+                            ':title' => "New Response on Ticket #{$id}",
+                            ':msg' => "HR ({$senderName}) replied: \"{$snippet}\"",
+                            ':rel_id' => $id
+                        ]);
+                    }
+                } else {
+                    // Employee replied -> Notify HR & Admin
+                    $hrStmt = $this->db->prepare("SELECT id FROM users WHERE role IN ('admin', 'hr') AND id != :uid");
+                    $hrStmt->execute([':uid' => $this->user['id']]);
+                    $admins = $hrStmt->fetchAll(PDO::FETCH_ASSOC);
+
+                    $nStmt = $this->db->prepare("INSERT INTO notifications (recipient_id, title, message, type, related_id, related_model, is_read, created_at, updated_at) VALUES (:uid, :title, :msg, 'helpdesk', :rel_id, 'tickets', 0, NOW(), NOW())");
+                    foreach ($admins as $adm) {
+                        $nStmt->execute([
+                            ':uid' => $adm['id'],
+                            ':title' => "New Comment on Ticket #{$id}",
+                            ':msg' => "{$senderName} added a message to ticket \"{$ticket['subject']}\": \"{$snippet}\"",
+                            ':rel_id' => $id
+                        ]);
+                    }
+                }
+            } catch (Exception $e) {}
+
             // Get the updated ticket with all comments to return
             $updatedTicket = $this->getSingleTicketData($id);
             Response::json(true, "Comment added", ['ticket' => $updatedTicket], 200);
@@ -169,6 +235,20 @@ class HelpdeskController {
             $query = "UPDATE tickets SET status = :status WHERE id = :id";
             $stmtUpdate = $this->db->prepare($query);
             $stmtUpdate->execute(['status' => $input['status'], 'id' => $id]);
+
+            // Notify employee about status update
+            try {
+                $statusLabel = ucfirst(str_replace('-', ' ', $input['status']));
+                if (!empty($ticket['employee_id']) && $ticket['employee_id'] != $this->user['id']) {
+                    $nStmt = $this->db->prepare("INSERT INTO notifications (recipient_id, title, message, type, related_id, related_model, is_read, created_at, updated_at) VALUES (:uid, :title, :msg, 'helpdesk', :rel_id, 'tickets', 0, NOW(), NOW())");
+                    $nStmt->execute([
+                        ':uid' => $ticket['employee_id'],
+                        ':title' => "Ticket Status Updated: {$statusLabel}",
+                        ':msg' => "Your complaint ticket (#{$id} - {$ticket['subject']}) status has been updated to {$statusLabel}.",
+                        ':rel_id' => $id
+                    ]);
+                }
+            } catch (Exception $e) {}
 
             // Get updated ticket
             $updatedTicket = $this->getSingleTicketData($id);
@@ -265,7 +345,7 @@ class HelpdeskController {
         }
 
         // verify access
-        $stmt = $this->db->prepare("SELECT employee_id FROM tickets WHERE id = :id");
+        $stmt = $this->db->prepare("SELECT employee_id, subject FROM tickets WHERE id = :id");
         $stmt->execute(['id' => $ticketId]);
         $ticket = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -286,6 +366,40 @@ class HelpdeskController {
             'user_id' => $this->user['id'],
             'comment' => $input['comment']
         ]);
+
+        // Notify relevant party
+        try {
+            $senderName = $this->user['name'] ?? 'User';
+            $snippet = strlen($input['comment']) > 60 ? substr($input['comment'], 0, 57) . '...' : $input['comment'];
+
+            if (in_array($this->user['role'], ['admin', 'hr'])) {
+                // HR replied -> Notify ticket creator
+                if (!empty($ticket['employee_id']) && $ticket['employee_id'] != $this->user['id']) {
+                    $nStmt = $this->db->prepare("INSERT INTO notifications (recipient_id, title, message, type, related_id, related_model, is_read, created_at, updated_at) VALUES (:uid, :title, :msg, 'helpdesk', :rel_id, 'tickets', 0, NOW(), NOW())");
+                    $nStmt->execute([
+                        ':uid' => $ticket['employee_id'],
+                        ':title' => "New Response on Ticket #{$ticketId}",
+                        ':msg' => "HR ({$senderName}) replied: \"{$snippet}\"",
+                        ':rel_id' => $ticketId
+                    ]);
+                }
+            } else {
+                // Employee replied -> Notify HR & Admin
+                $hrStmt = $this->db->prepare("SELECT id FROM users WHERE role IN ('admin', 'hr') AND id != :uid");
+                $hrStmt->execute([':uid' => $this->user['id']]);
+                $admins = $hrStmt->fetchAll(PDO::FETCH_ASSOC);
+
+                $nStmt = $this->db->prepare("INSERT INTO notifications (recipient_id, title, message, type, related_id, related_model, is_read, created_at, updated_at) VALUES (:uid, :title, :msg, 'helpdesk', :rel_id, 'tickets', 0, NOW(), NOW())");
+                foreach ($admins as $adm) {
+                    $nStmt->execute([
+                        ':uid' => $adm['id'],
+                        ':title' => "New Comment on Ticket #{$ticketId}",
+                        ':msg' => "{$senderName} added a message to ticket \"{$ticket['subject']}\": \"{$snippet}\"",
+                        ':rel_id' => $ticketId
+                    ]);
+                }
+            }
+        } catch (Exception $e) {}
 
         Response::json(true, "Comment added");
     }

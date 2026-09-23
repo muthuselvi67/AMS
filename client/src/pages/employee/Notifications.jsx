@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, Clock, Calendar, CheckCircle, Info, AlertTriangle, ArrowRight, CheckCheck, FileText, XCircle, Cake, ShieldAlert, Siren } from 'lucide-react';
+import { Bell, Clock, Calendar, CheckCircle, Info, AlertTriangle, ArrowRight, CheckCheck, FileText, XCircle, Cake, ShieldAlert, Siren, LifeBuoy } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../api/axios';
 import toast from 'react-hot-toast';
@@ -16,6 +16,8 @@ const typeIcons = {
     birthday: <Cake size={18} color="#EC4899" />,
     safety: <ShieldAlert size={18} color="#F43F5E" />,
     emergency: <Siren size={18} color="#EF4444" />,
+    helpdesk: <LifeBuoy size={18} color="#3B82F6" />,
+    complaint: <AlertTriangle size={18} color="#F59E0B" />,
     general: <Info size={18} color="var(--text-muted)" />
 };
 
@@ -30,6 +32,8 @@ const typeColors = {
     birthday: 'rgba(236, 72, 153, 0.15)',
     safety: 'rgba(244, 63, 94, 0.15)',
     emergency: 'rgba(239, 68, 68, 0.2)',
+    helpdesk: 'rgba(59, 130, 246, 0.15)',
+    complaint: 'rgba(245, 158, 11, 0.15)',
     general: 'var(--bg-light)'
 };
 
@@ -72,29 +76,46 @@ const Notifications = () => {
         const msgLower = (n.message || '').toLowerCase();
         const typeLower = (n.type || '').toLowerCase();
 
-        if (titleLower.includes('regularization') || msgLower.includes('regularization') || typeLower.includes('regularization')) {
+        // 1. Emergency / SOS
+        if (typeLower === 'emergency' || titleLower.includes('sos') || titleLower.includes('emergency') || msgLower.includes('sos') || msgLower.includes('emergency')) {
+            navigate(`${prefix}/women-safety`, { state: { activeTab: 'emergency', id: n.relatedId } });
+        }
+        // 2. Safety / Workplace concern / POSH
+        else if (typeLower === 'safety' || n.relatedModel === 'women_safety' || titleLower.includes('safety') || titleLower.includes('posh') || msgLower.includes('safety complaint') || msgLower.includes('posh')) {
+            navigate(`${prefix}/women-safety`, { state: { activeTab: 'reports', reportId: n.relatedId } });
+        }
+        // 3. Regularization
+        else if (titleLower.includes('regularization') || msgLower.includes('regularization') || typeLower.includes('regularization')) {
             navigate(`${prefix}/regularization`);
-        } else if (titleLower.includes('check-in') || titleLower.includes('check-out')) {
+        }
+        // 4. Attendance
+        else if (titleLower.includes('check-in') || titleLower.includes('check-out') || typeLower === 'attendance') {
             navigate(`${prefix}/attendance`);
-        } else if (typeLower.includes('leave') || titleLower.includes('leave')) {
+        }
+        // 5. HelpDesk Support Tickets
+        else if (typeLower === 'helpdesk' || typeLower === 'complaint' || n.relatedModel === 'tickets' || titleLower.includes('helpdesk') || titleLower.includes('ticket')) {
+            navigate(`${prefix}/helpdesk`, { state: { ticketId: n.relatedId } });
+        }
+        // 6. Leave
+        else if (typeLower.includes('leave') || titleLower.includes('leave')) {
             navigate(`${prefix}/leave-history`);
-        } else if (typeLower.includes('allowance') || titleLower.includes('allowance')) {
+        }
+        // 7. Allowance
+        else if (typeLower.includes('allowance') || titleLower.includes('allowance')) {
             navigate(`${prefix}/allowance-history`);
-        } else if (typeLower === 'emergency' || titleLower.includes('sos') || titleLower.includes('emergency')) {
-            navigate(`${prefix}/women-safety`, { state: { activeTab: 'emergency' } });
-        } else if (typeLower === 'safety' || titleLower.includes('safety') || n.relatedModel === 'women_safety') {
-            navigate(`${prefix}/women-safety`, { state: { activeTab: 'reports' } });
-        } else if (n.relatedModel === 'task_handovers' || msgLower.includes('handover') || titleLower.includes('task')) {
+        }
+        // 8. Task handover
+        else if (n.relatedModel === 'task_handovers' || msgLower.includes('handover') || titleLower.includes('task')) {
             navigate(`${prefix}/assigned-tasks`);
-        } else if (n.type === 'birthday') {
+        }
+        // 9. Birthday
+        else if (n.type === 'birthday') {
             const role = user?.role?.toLowerCase();
             if (role === 'admin' || role === 'hr') {
                 navigate(`/${role}/employees`);
             } else {
                 navigate(`/employee/directory`);
             }
-        } else if (typeLower === 'attendance') {
-            navigate(`${prefix}/attendance`);
         }
     };
 

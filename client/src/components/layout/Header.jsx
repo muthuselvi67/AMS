@@ -42,6 +42,9 @@ const pageTitles = {
     '/admin/my-attendance': { title: 'My Attendance', sub: 'Log your daily attendance' },
     '/hr/my-attendance': { title: 'My Attendance', sub: 'Log your daily attendance' },
     '/pm/my-attendance': { title: 'My Attendance', sub: 'Log your daily attendance' },
+    '/employee/women-safety': { title: 'Grievances Tracking', sub: 'Report and track workplace concerns & grievances' },
+    '/admin/women-safety': { title: 'Grievances Tracking', sub: 'Confidential review and management of workplace grievances' },
+    '/hr/women-safety': { title: 'Grievances Tracking', sub: 'Confidential review and management of workplace grievances' },
 };
 
 
@@ -103,7 +106,7 @@ const Header = ({ onMenuClick }) => {
             } catch { }
         };
         fetchUnread();
-        const interval = setInterval(fetchUnread, 30000); // Poll every 30 seconds
+        const interval = setInterval(fetchUnread, 10000); // Poll every 10 seconds for real-time alerts
         return () => clearInterval(interval);
     }, [location.pathname]); // Refresh when navigating pages
 
@@ -119,20 +122,34 @@ const Header = ({ onMenuClick }) => {
         if (!n.isRead) markRead(n.id);
         setNotifDropdownOpen(false);
         const prefix = `/${user?.role?.toLowerCase() || 'employee'}`;
-        
-        if (n.type === 'leave_applied') {
+        const titleLower = (n.title || '').toLowerCase();
+        const msgLower = (n.message || '').toLowerCase();
+        const typeLower = (n.type || '').toLowerCase();
+
+        // 1. Emergency / SOS
+        if (typeLower === 'emergency' || titleLower.includes('sos') || titleLower.includes('emergency') || msgLower.includes('sos') || msgLower.includes('emergency')) {
+            navigate(`${prefix}/women-safety`, { state: { activeTab: 'emergency', id: n.relatedId } });
+        }
+        // 2. Safety / POSH complaints
+        else if (typeLower === 'safety' || n.relatedModel === 'women_safety' || titleLower.includes('safety') || titleLower.includes('posh') || msgLower.includes('safety complaint') || msgLower.includes('posh')) {
+            navigate(`${prefix}/women-safety`, { state: { activeTab: 'reports', reportId: n.relatedId } });
+        }
+        // 3. HelpDesk Support Tickets
+        else if (typeLower === 'helpdesk' || typeLower === 'complaint' || n.relatedModel === 'tickets' || titleLower.includes('helpdesk') || titleLower.includes('ticket')) {
+            navigate(`${prefix}/helpdesk`, { state: { ticketId: n.relatedId } });
+        }
+        // 4. Leave
+        else if (typeLower === 'leave_applied') {
             navigate(`${prefix}/leave-requests`);
-        } else if (n.type === 'allowance_applied') {
+        } else if (typeLower === 'allowance_applied') {
             navigate(`${prefix}/allowance-review`);
-        } else if (n.type === 'leave_approved' || n.type === 'leave_rejected' || n.type === 'leave_cancelled') {
+        } else if (typeLower === 'leave_approved' || typeLower === 'leave_rejected' || typeLower === 'leave_cancelled') {
             navigate(`${prefix}/leave-history`);
-        } else if (n.type === 'allowance_approved' || n.type === 'allowance_rejected') {
+        } else if (typeLower === 'allowance_approved' || typeLower === 'allowance_rejected') {
             navigate(`${prefix}/allowance-history`);
-        } else if (n.relatedModel === 'task_handovers' || n.message?.toLowerCase().includes('handover')) {
-            if (n.message?.toLowerCase().includes('assigned tasks') || n.title?.toLowerCase().includes('task handover')) {
-                // If it's an assignment (they got assigned a task) -> go to assigned-tasks
-                // Note: The message for requester also says "Task Handover Accepted/Rejected", so we check for 'assigned tasks' or route by role
-                if (n.message?.toLowerCase().includes('assigned tasks')) {
+        } else if (n.relatedModel === 'task_handovers' || msgLower.includes('handover')) {
+            if (msgLower.includes('assigned tasks') || titleLower.includes('task handover')) {
+                if (msgLower.includes('assigned tasks')) {
                     navigate(`${prefix}/assigned-tasks`);
                 } else {
                     navigate(`${prefix}/leave-history`);
@@ -140,17 +157,15 @@ const Header = ({ onMenuClick }) => {
             } else {
                 navigate(`${prefix}/leave-history`);
             }
-        } else if (n.type === 'birthday') {
+        } else if (typeLower === 'birthday') {
             const role = user?.role?.toLowerCase();
             if (role === 'admin' || role === 'hr') {
                 navigate(`/${role}/employees`);
             } else {
                 navigate(`/employee/directory`);
             }
-        } else if (n.type === 'attendance') {
+        } else if (typeLower === 'attendance') {
             navigate(`${prefix}/regularization`);
-        } else if (n.type === 'safety' || n.type === 'emergency' || n.relatedModel === 'women_safety' || n.title?.toLowerCase().includes('safety') || n.title?.toLowerCase().includes('sos')) {
-            navigate(`${prefix}/women-safety`);
         }
     };
 

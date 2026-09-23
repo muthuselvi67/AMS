@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Search, MessageCircle, CheckCircle, Clock, AlertCircle, LifeBuoy } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
+import { Search, MessageCircle, CheckCircle, Clock, AlertCircle, LifeBuoy, Send } from 'lucide-react';
 import api from '../../api/axios';
 import Modal from '../../components/ui/Modal';
 import { useAuth } from '../../context/AuthContext';
@@ -16,6 +17,7 @@ const CATEGORIES = ['payroll', 'leave', 'attendance', 'documents', 'assets', 'be
 
 const HRHelpDesk = () => {
     const { user } = useAuth();
+    const location = useLocation();
     const [tickets, setTickets] = useState([]);
     const [loading, setLoading] = useState(true);
     const [viewModal, setViewModal] = useState({ open: false, ticket: null });
@@ -33,7 +35,16 @@ const HRHelpDesk = () => {
             if (filterStatus) params.status = filterStatus;
             if (filterPriority) params.priority = filterPriority;
             const { data } = await api.get('/helpdesk', { params });
-            setTickets(Array.isArray(data.data?.tickets) ? data.data.tickets : []);
+            const list = Array.isArray(data.data?.tickets) ? data.data.tickets : (Array.isArray(data.data) ? data.data : []);
+            setTickets(list);
+
+            // If navigated with a specific ticketId, auto-open it
+            if (location.state?.ticketId) {
+                const target = list.find(t => String(t.id) === String(location.state.ticketId));
+                if (target) {
+                    setViewModal({ open: true, ticket: target });
+                }
+            }
         } catch { toast.error('Failed to load tickets'); }
         finally { setLoading(false); }
     };
@@ -41,7 +52,8 @@ const HRHelpDesk = () => {
     const fetchEmployees = async () => {
         try {
             const { data } = await api.get('/users');
-            setEmployees(data.data.filter(u => u.role === 'hr' || u.role === 'admin'));
+            const list = Array.isArray(data.data) ? data.data : (data.data?.users || []);
+            setEmployees(Array.isArray(list) ? list.filter(u => u.role === 'hr' || u.role === 'admin') : []);
         } catch { }
     };
 
@@ -171,42 +183,268 @@ const HRHelpDesk = () => {
                 </div>
             </div>
 
-            <Modal isOpen={viewModal.open} onClose={() => setViewModal({ open: false, ticket: null })} title="Ticket Details" size="lg">
+            <Modal isOpen={Boolean(viewModal.open && viewModal.ticket)} onClose={() => setViewModal({ open: false, ticket: null })} title="Ticket Details" size="lg">
                 {viewModal.ticket && (
-                    <div>
-                        <div style={{ background: 'var(--bg-light)', borderRadius: 10, padding: 16, marginBottom: 16 }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
-                                <div>
-                                    <h3 style={{ margin: '0 0 8px', fontSize: 16 }}>{viewModal.ticket.subject}</h3>
-                                    <div style={{ display: 'flex', gap: 12, fontSize: 12, color: 'var(--text-muted)', flexWrap: 'wrap' }}>
-                                        <span>By: <b style={{ color: 'var(--text-secondary)' }}>{viewModal.ticket.submittedBy?.name}</b></span>
-                                        <span>Category: <b style={{ color: 'var(--text-secondary)', textTransform: 'capitalize' }}>{viewModal.ticket.category}</b></span>
-                                        <span>Priority: <b style={{ color: PRIORITY_COLORS[viewModal.ticket.priority], textTransform: 'capitalize' }}>{viewModal.ticket.priority}</b></span>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+                        {/* Main Ticket Card */}
+                        <div style={{
+                            background: 'linear-gradient(135deg, rgba(248, 250, 252, 0.9) 0%, rgba(241, 245, 249, 0.6) 100%)',
+                            border: '1px solid #E2E8F0',
+                            borderRadius: 14,
+                            padding: '18px 20px',
+                            boxShadow: '0 2px 10px rgba(0,0,0,0.02)'
+                        }}>
+                            {/* Top Meta Bar */}
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12, marginBottom: 14 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                                    <span style={{
+                                        background: '#EEF2FF',
+                                        color: '#4F46E5',
+                                        fontWeight: 700,
+                                        fontSize: 12,
+                                        padding: '3px 10px',
+                                        borderRadius: 6,
+                                        letterSpacing: '0.5px'
+                                    }}>
+                                        #TKT-{viewModal.ticket.id}
+                                    </span>
+                                    <span style={{
+                                        background: '#F1F5F9',
+                                        color: '#475569',
+                                        fontWeight: 600,
+                                        fontSize: 12,
+                                        padding: '3px 10px',
+                                        borderRadius: 6,
+                                        textTransform: 'capitalize'
+                                    }}>
+                                        {viewModal.ticket.category}
+                                    </span>
+                                    <span style={{
+                                        background: `${PRIORITY_COLORS[viewModal.ticket.priority]}15`,
+                                        color: PRIORITY_COLORS[viewModal.ticket.priority],
+                                        fontWeight: 700,
+                                        fontSize: 12,
+                                        padding: '3px 10px',
+                                        borderRadius: 6,
+                                        textTransform: 'capitalize',
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: 5
+                                    }}>
+                                        <span style={{ width: 6, height: 6, borderRadius: '50%', background: PRIORITY_COLORS[viewModal.ticket.priority] }} />
+                                        {viewModal.ticket.priority} Priority
+                                    </span>
+                                </div>
+
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                                    <span style={{ fontSize: 12, fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.4px', whiteSpace: 'nowrap' }}>
+                                        Status:
+                                    </span>
+                                    <div style={{
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: 6,
+                                        background: `${STATUS_META[viewModal.ticket.status]?.color || '#94A3B8'}12`,
+                                        border: `1.5px solid ${STATUS_META[viewModal.ticket.status]?.color || '#CBD5E1'}40`,
+                                        borderRadius: 20,
+                                        padding: '2px 10px 2px 12px',
+                                        transition: 'all 0.2s ease',
+                                        boxShadow: '0 1px 3px rgba(0,0,0,0.03)'
+                                    }}>
+                                        <span style={{
+                                            width: 8,
+                                            height: 8,
+                                            borderRadius: '50%',
+                                            background: STATUS_META[viewModal.ticket.status]?.color || '#94A3B8',
+                                            boxShadow: `0 0 6px ${STATUS_META[viewModal.ticket.status]?.color || '#94A3B8'}80`,
+                                            flexShrink: 0
+                                        }} />
+                                        <select 
+                                            style={{ 
+                                                background: 'transparent',
+                                                border: 'none',
+                                                outline: 'none',
+                                                boxShadow: 'none',
+                                                fontWeight: 700, 
+                                                fontSize: 13,
+                                                color: STATUS_META[viewModal.ticket.status]?.color || '#1E293B',
+                                                cursor: 'pointer',
+                                                padding: '4px 2px',
+                                                fontFamily: 'inherit'
+                                            }} 
+                                            value={viewModal.ticket.status} 
+                                            onChange={e => updateStatus(viewModal.ticket, e.target.value)}
+                                        >
+                                            {Object.entries(STATUS_META).map(([k, v]) => (
+                                                <option key={k} value={k} style={{ color: '#0F172A', background: '#FFFFFF', fontWeight: 600 }}>
+                                                    {v.label}
+                                                </option>
+                                            ))}
+                                        </select>
                                     </div>
                                 </div>
-                                <select className="form-control" style={{ width: 160 }} value={viewModal.ticket.status} onChange={e => updateStatus(viewModal.ticket, e.target.value)}>
-                                    {Object.entries(STATUS_META).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
-                                </select>
                             </div>
-                            <p style={{ margin: '12px 0 0', fontSize: 14, lineHeight: 1.6, color: 'var(--text-primary)' }}>{viewModal.ticket.description}</p>
+
+                            {/* Ticket Subject */}
+                            <h2 style={{ margin: '0 0 10px', fontSize: 17, fontWeight: 700, color: '#0F172A', lineHeight: 1.4 }}>
+                                {viewModal.ticket.subject}
+                            </h2>
+
+                            {/* Submitter Info */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14, flexWrap: 'wrap' }}>
+                                <div style={{
+                                    width: 28,
+                                    height: 28,
+                                    borderRadius: '50%',
+                                    background: 'linear-gradient(135deg, #6366F1, #8B5CF6)',
+                                    color: 'white',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontSize: 11,
+                                    fontWeight: 700
+                                }}>
+                                    {(viewModal.ticket.submittedBy?.name || 'U').slice(0, 2).toUpperCase()}
+                                </div>
+                                <div style={{ fontSize: 12.5, color: '#475569' }}>
+                                    <span style={{ fontWeight: 600, color: '#1E293B' }}>{viewModal.ticket.submittedBy?.name}</span>
+                                    {viewModal.ticket.submittedBy?.department && (
+                                        <span style={{ color: 'var(--text-muted)' }}> • {viewModal.ticket.submittedBy?.department}</span>
+                                    )}
+                                    <span style={{ color: 'var(--text-muted)' }}> • {new Date(viewModal.ticket.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })} at {new Date(viewModal.ticket.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</span>
+                                </div>
+                            </div>
+
+                            {/* Ticket Description */}
+                            <div style={{
+                                background: 'white',
+                                border: '1px solid #E2E8F0',
+                                borderLeft: '4px solid #6366F1',
+                                borderRadius: 10,
+                                padding: '14px 16px',
+                                fontSize: 13.5,
+                                lineHeight: 1.6,
+                                color: '#334155'
+                            }}>
+                                {viewModal.ticket.description}
+                            </div>
                         </div>
 
-                        <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 10 }}>Comments ({viewModal.ticket.comments?.length || 0})</div>
-                        <div style={{ maxHeight: 240, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
-                            {(viewModal.ticket.comments || []).length === 0 ? (
-                                <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>No comments yet.</p>
-                            ) : (
-                                (viewModal.ticket.comments || []).map((c, i) => (
-                                    <div key={i} style={{ background: 'var(--bg-light)', borderRadius: 8, padding: '10px 14px' }}>
-                                        <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--primary)', marginBottom: 4 }}>{c.by?.name || 'User'} <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>� {new Date(c.date).toLocaleString('en-IN')}</span></div>
-                                        <div style={{ fontSize: 13, color: 'var(--text-primary)' }}>{c.text}</div>
+                        {/* Conversation Header */}
+                        <div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                                <div style={{ fontWeight: 700, fontSize: 14, color: '#1E293B', display: 'flex', alignItems: 'center', gap: 8 }}>
+                                    <span>Conversation History</span>
+                                    <span style={{ background: '#F1F5F9', color: '#64748B', padding: '1px 8px', borderRadius: 12, fontSize: 12 }}>
+                                        {viewModal.ticket.comments?.length || 0}
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Comments Scrollable Area */}
+                            <div style={{
+                                maxHeight: 220,
+                                overflowY: 'auto',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: 10,
+                                paddingRight: 4,
+                                marginBottom: 14
+                            }}>
+                                {(viewModal.ticket.comments || []).length === 0 ? (
+                                    <div style={{
+                                        padding: '24px 16px',
+                                        textAlign: 'center',
+                                        background: '#F8FAFC',
+                                        borderRadius: 10,
+                                        border: '1px dashed #CBD5E1',
+                                        color: '#64748B',
+                                        fontSize: 13
+                                    }}>
+                                        No replies on this ticket yet. Add a response below to assist the employee.
                                     </div>
-                                ))
-                            )}
-                        </div>
-                        <div style={{ display: 'flex', gap: 10 }}>
-                            <textarea className="form-control" rows={2} placeholder="Add a comment..." value={comment} onChange={e => setComment(e.target.value)} style={{ flex: 1, resize: 'none' }} />
-                            <button className="btn btn-primary" onClick={addComment} disabled={savingComment || !comment.trim()}>{savingComment ? '...' : 'Send'}</button>
+                                ) : (
+                                    (viewModal.ticket.comments || []).map((c, i) => {
+                                        const isHr = c.by?.role !== 'employee';
+                                        return (
+                                            <div
+                                                key={i}
+                                                style={{
+                                                    background: isHr ? '#F0FDF4' : '#F8FAFC',
+                                                    border: `1px solid ${isHr ? '#BBF7D0' : '#E2E8F0'}`,
+                                                    borderRadius: 10,
+                                                    padding: '12px 14px'
+                                                }}
+                                            >
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                                        <div style={{
+                                                            width: 22,
+                                                            height: 22,
+                                                            borderRadius: '50%',
+                                                            background: isHr ? '#10B981' : '#3B82F6',
+                                                            color: 'white',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center',
+                                                            fontSize: 9,
+                                                            fontWeight: 700
+                                                        }}>
+                                                            {(c.by?.name || 'U').slice(0, 2).toUpperCase()}
+                                                        </div>
+                                                        <span style={{ fontSize: 12.5, fontWeight: 700, color: isHr ? '#166534' : '#1E293B' }}>
+                                                            {c.by?.name || 'User'}
+                                                        </span>
+                                                        <span style={{
+                                                            fontSize: 10.5,
+                                                            fontWeight: 600,
+                                                            padding: '1px 6px',
+                                                            borderRadius: 4,
+                                                            background: isHr ? '#DCFCE7' : '#DBEAFE',
+                                                            color: isHr ? '#15803D' : '#1D4ED8'
+                                                        }}>
+                                                            {isHr ? 'HR Support' : 'Employee'}
+                                                        </span>
+                                                    </div>
+                                                    <span style={{ fontSize: 11.5, color: '#94A3B8' }}>
+                                                        {new Date(c.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} • {new Date(c.date).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+                                                    </span>
+                                                </div>
+                                                <div style={{ fontSize: 13, color: '#334155', lineHeight: 1.5, paddingLeft: 30 }}>
+                                                    {c.text}
+                                                </div>
+                                            </div>
+                                        );
+                                    })
+                                )}
+                            </div>
+
+                            {/* Reply Input Bar */}
+                            <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                                <textarea
+                                    className="form-control"
+                                    rows={2}
+                                    placeholder="Write a response to the employee... (Press Ctrl+Enter to send)"
+                                    value={comment}
+                                    onChange={e => setComment(e.target.value)}
+                                    onKeyDown={e => {
+                                        if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                                            e.preventDefault();
+                                            addComment();
+                                        }
+                                    }}
+                                    style={{ flex: 1, resize: 'none', borderRadius: 10, fontSize: 13.5 }}
+                                />
+                                <button
+                                    className="btn btn-primary"
+                                    onClick={addComment}
+                                    disabled={savingComment || !comment.trim()}
+                                    style={{ height: 44, padding: '0 18px', display: 'flex', alignItems: 'center', gap: 6, borderRadius: 10, fontWeight: 600 }}
+                                >
+                                    <Send size={14} />
+                                    <span>{savingComment ? 'Sending...' : 'Send Reply'}</span>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 )}

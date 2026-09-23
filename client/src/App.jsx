@@ -149,6 +149,7 @@ function App() {
                                 <Route path="/admin/appraisals" element={<HRAppraisal />} />
                                 <Route path="/admin/pm-appraisals" element={<HRPMAppraisals />} />
                                 <Route path="/admin/wfh-policy" element={<WFHPolicyManager />} />
+                                <Route path="/admin/helpdesk" element={<HRHelpDesk />} />
                                 <Route path="/admin/green-events" element={<ManageGreenEvents />} />
                                 <Route path="/admin/women-safety" element={<ManageWomenSafety />} />
                                 <Route path="/admin/profile" element={<Profile />} />
